@@ -32,6 +32,41 @@ const SubmitIncident: React.FC = () => {
       description: 'Building, equipment, maintenance',
       icon: '🏢',
       color: 'bg-purple-50 border-purple-200 text-purple-700'
+    },
+    { 
+      value: 'security', 
+      label: 'Security',
+      description: 'Unauthorized access, theft, threats',
+      icon: '🔒',
+      color: 'bg-red-50 border-red-200 text-red-700'
+    },
+    { 
+      value: 'finance', 
+      label: 'Finance',
+      description: 'Budget issues, reimbursements, fraud',
+      icon: '💰',
+      color: 'bg-yellow-50 border-yellow-200 text-yellow-700'
+    },
+    { 
+      value: 'health-safety', 
+      label: 'Health & Safety',
+      description: 'Injuries, hazards, compliance concerns',
+      icon: '🩺',
+      color: 'bg-pink-50 border-pink-200 text-pink-700'
+    },
+    { 
+      value: 'legal', 
+      label: 'Legal',
+      description: 'Compliance, legal risks, disputes',
+      icon: '⚖️',
+      color: 'bg-gray-50 border-gray-200 text-gray-700'
+    },
+    { 
+      value: 'other', 
+      label: 'Other',
+      description: 'Anything not covered above',
+      icon: '❓',
+      color: 'bg-indigo-50 border-indigo-200 text-indigo-700'
     }
   ];
 
@@ -93,7 +128,7 @@ const SubmitIncident: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
               {/* Title Field */}
-              <div>
+              {/* <div>
                 <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-3">
                   Issue Title <span className="text-red-500">*</span>
                 </label>
@@ -107,10 +142,35 @@ const SubmitIncident: React.FC = () => {
                   className="w-full px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   placeholder="Brief description of the issue"
                 />
+              </div> */}
+
+               {/* Description Field */}
+               <div>
+                <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-3">
+                  Detailed Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="description"
+                  name="description"
+                  rows={6}
+                  required
+                  value={formData.description}
+                  onChange={handleChange}
+                  className="w-full px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                  placeholder="Please provide detailed information about the issue including:
+• What happened?
+• When did it occur?
+• Steps to reproduce
+• Error messages (if any)
+• Impact on your work"
+                />
+                <div className="mt-2 text-xs sm:text-sm text-gray-500">
+                  {formData.description.length}/500 characters
+                </div>
               </div>
 
               {/* Category Selection */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
                   Category <span className="text-red-500">*</span>
                 </label>
@@ -149,32 +209,31 @@ const SubmitIncident: React.FC = () => {
                     </label>
                   ))}
                 </div>
-              </div>
+              </div> */}
 
-              {/* Description Field */}
-              <div>
-                <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-3">
-                  Detailed Description <span className="text-red-500">*</span>
+               {/* Category Display */}
+               <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Available Categories
                 </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  rows={6}
-                  required
-                  value={formData.description}
-                  onChange={handleChange}
-                  className="w-full px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
-                  placeholder="Please provide detailed information about the issue including:
-• What happened?
-• When did it occur?
-• Steps to reproduce
-• Error messages (if any)
-• Impact on your work"
-                />
-                <div className="mt-2 text-xs sm:text-sm text-gray-500">
-                  {formData.description.length}/500 characters
+                <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                  {categories.map(category => (
+                    <div
+                      key={category.value}
+                      className={`relative min-w-[220px] shrink-0 rounded-xl border-2 p-4 ${category.color}`}
+                    >
+                      <div className="text-center">
+                        <div className="text-2xl mb-2">{category.icon}</div>
+                        <h3 className="font-semibold text-gray-900 mb-1">{category.label}</h3>
+                        <p className="text-sm text-gray-600">{category.description}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
+             
+
+             
 
               {/* AI Features Info */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 sm:p-6">
@@ -217,7 +276,7 @@ const SubmitIncident: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting || !formData.title || !formData.description || !formData.category}
+                  disabled={isSubmitting || !formData.description }
                   className="flex-1 px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-2 sm:space-x-3 font-medium shadow-lg text-sm sm:text-base"
                 >
                   {isSubmitting ? (

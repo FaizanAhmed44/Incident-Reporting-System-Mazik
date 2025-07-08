@@ -256,7 +256,7 @@ const TrackTickets: React.FC = () => {
                         <User className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Agent</p>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Assigned Member</p>
                         <p className="text-xs sm:text-sm font-semibold text-gray-900">{ticket.assignedAgent || 'Unassigned'}</p>
                       </div>
                     </div>

@@ -119,8 +119,7 @@ const AdminHome: React.FC = () => {
   const stats = [
     { name: 'Total Tickets', value: '247', change: '+12%', changeType: 'increase', icon: FileText },
     { name: 'Active Support Staff', value: '18', change: '+2', changeType: 'increase', icon: Users },
-    { name: 'Avg Resolution Time', value: '4.2h', change: '-0.8h', changeType: 'decrease', icon: Clock },
-    { name: 'Customer Satisfaction', value: '94%', change: '+3%', changeType: 'increase', icon: TrendingUp },
+    { name: 'Avg Resolution Time', value: '4.2h', change: '-0.8h', changeType: 'decrease', icon: Clock },    
   ];
 
   const departmentStats = [

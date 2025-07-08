@@ -155,24 +155,7 @@ const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                    Remember me
-                  </label>
-                </div>
-                <a href="#" className="text-sm text-blue-600 hover:text-blue-500 transition-colors">
-                  Forgot password?
-                </a>
-              </div>
+              </div>            
 
               <button
                 type="submit"
@@ -189,14 +172,7 @@ const Login: React.FC = () => {
                 )}
               </button>
             </form>
-
-            {/* Azure AD Branding */}
-            <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
-              <div className="flex items-center justify-center space-x-2 text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
-                <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Secured by Microsoft Azure AD</span>
-              </div>
-            </div>
+           
 
             {/* Demo Quick Login */}
             <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
