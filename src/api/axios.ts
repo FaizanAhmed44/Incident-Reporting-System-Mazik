@@ -1,32 +1,50 @@
+// import axios, { AxiosInstance } from 'axios';
+
+// const apiClient: AxiosInstance = axios.create({
+//   baseURL: 'https://5f257beee4e8e7459c386335509b51.00.environment.api.powerplatform.com:443',
+//   timeout: 10000,
+//   headers: {
+//     'Content-Type': 'application/json',
+//   },
+// });
+
+// apiClient.interceptors.request.use(
+//   (config) => {
+//     // Add auth headers if needed
+//     return config;
+//   },
+//   (error) => Promise.reject(error)
+// );
+
+// apiClient.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     console.error('API error:', error.response?.data || error.message);
+//     return Promise.reject(error);
+//   }
+// );
+
+// export default apiClient;
 import axios, { AxiosInstance } from 'axios';
 
-// Create an Axios instance with default configuration
 const apiClient: AxiosInstance = axios.create({
-  baseURL: 'https://jsonplaceholder.typicode.com', // Replace with your API base URL
-  timeout: 10000, // Request timeout in milliseconds
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Optional: Add request interceptor for handling headers, auth, etc.
 apiClient.interceptors.request.use(
   (config) => {
-    // Add any custom headers or auth tokens here if needed
+    console.log('Request URL:', config.url); // Debugging log
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Optional: Add response interceptor for handling errors
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // Handle errors globally (e.g., 401, 500, etc.)
     console.error('API error:', error.response?.data || error.message);
     return Promise.reject(error);
   }
