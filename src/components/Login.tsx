@@ -169,22 +169,6 @@ const Login: React.FC = () => {
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                    Remember me
-                  </label>
-                </div>
-                <a href="#" className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors">
-                  Forgot password?
-                </a>
-              </div>
 
               <button
                 type="submit"
@@ -202,14 +186,7 @@ const Login: React.FC = () => {
               </button>
             </form>
 
-            {/* Azure AD Branding */}
-            <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-600">
-              <div className="flex items-center justify-center space-x-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
-                <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Secured by Microsoft Azure AD</span>
-              </div>
-            </div>
-
+         
             {/* Demo Quick Login */}
             <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-600">
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center mb-3 sm:mb-4">Demo Access:</p>

@@ -132,8 +132,8 @@ const TrackTickets: React.FC = () => {
                 >
                   <Icon className="h-3 w-3 sm:h-5 sm:w-5" />
                 </div>
-                <span className={`text-xs mt-1 sm:mt-2 font-medium ${isActive ? 'text-gray-900' : 'text-gray-400'}`}>
-                  {stage.label}
+                <span className={`text-xs mt-1 sm:mt-2 font-medium ${isActive ? 'text-gray-400' : 'text-gray-400'}`}>
+                  {stage.label }
                 </span>
               </div>
               {index < stages.length - 1 && (
@@ -256,7 +256,7 @@ const TrackTickets: React.FC = () => {
                         <User className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Agent</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Assigned Member</p>
                         <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">{ticket.assignedAgent || 'Unassigned'}</p>
                       </div>
                     </div>

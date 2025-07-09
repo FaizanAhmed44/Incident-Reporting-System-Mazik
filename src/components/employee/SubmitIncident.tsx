@@ -32,6 +32,41 @@ const SubmitIncident: React.FC = () => {
       description: 'Building, equipment, maintenance',
       icon: '🏢',
       color: 'bg-purple-50 border-purple-200 text-purple-700'
+    },
+    { 
+      value: 'security', 
+      label: 'Security',
+      description: 'Unauthorized access, theft, threats',
+      icon: '🔒',
+      color: 'bg-red-50 border-red-200 text-red-700'
+    },
+    { 
+      value: 'finance', 
+      label: 'Finance',
+      description: 'Budget issues, reimbursements, fraud',
+      icon: '💰',
+      color: 'bg-yellow-50 border-yellow-200 text-yellow-700'
+    },
+    { 
+      value: 'health-safety', 
+      label: 'Health & Safety',
+      description: 'Injuries, hazards, compliance concerns',
+      icon: '🩺',
+      color: 'bg-pink-50 border-pink-200 text-pink-700'
+    },
+    { 
+      value: 'legal', 
+      label: 'Legal',
+      description: 'Compliance, legal risks, disputes',
+      icon: '⚖️',
+      color: 'bg-gray-50 border-gray-200 text-gray-700'
+    },
+    { 
+      value: 'other', 
+      label: 'Other',
+      description: 'Anything not covered above',
+      icon: '❓',
+      color: 'bg-indigo-50 border-indigo-200 text-indigo-700'
     }
   ];
 
@@ -88,70 +123,13 @@ const SubmitIncident: React.FC = () => {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
-              {/* Title Field */}
-              <div>
-                <label htmlFor="title" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Issue Title <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  name="title"
-                  required
-                  value={formData.title}
-                  onChange={handleChange}
-                  className="w-full px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="Brief description of the issue"
-                />
-              </div>
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">             
 
-              {/* Category Selection */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Category <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                  {categories.map(category => (
-                    <label
-                      key={category.value}
-                      className={`relative cursor-pointer rounded-xl border-2 p-3 sm:p-4 transition-all duration-200 hover:shadow-md ${
-                        formData.category === category.value
-                          ? category.color
-                          : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="category"
-                        value={category.value}
-                        checked={formData.category === category.value}
-                        onChange={handleChange}
-                        className="sr-only"
-                      />
-                      <div className="text-center">
-                        <div className="text-xl sm:text-2xl mb-2">{category.icon}</div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-1">{category.label}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{category.description}</p>
-                      </div>
-                      {formData.category === category.value && (
-                        <div className="absolute top-2 right-2">
-                          <div className="bg-blue-600 rounded-full p-1">
-                            <svg className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        </div>
-                      )}
-                    </label>
-                  ))}
-                </div>
-              </div>
 
-              {/* Description Field */}
+                {/* Description Field */}
               <div>
                 <label htmlFor="description" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Detailed Description <span className="text-red-500">*</span>
+                  Description <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   id="description"
@@ -172,6 +150,34 @@ const SubmitIncident: React.FC = () => {
                   {formData.description.length}/500 characters
                 </div>
               </div>
+
+
+{/* Category Display (Horizontally Scrollable, Themed Scrollbar) */}
+<div>
+  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+    Available Category <span className="text-red-500">*</span>
+  </label>
+  <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-2
+              scrollbar-thin 
+              scrollbar-thumb-gray-100 dark:scrollbar-thumb-gray-600 
+              scrollbar-track-gray-100 dark:scrollbar-track-gray-100
+            ">
+    {categories.map(category => (
+      <div
+        key={category.value}
+        className={`relative min-w-[220px] sm:min-w-[240px] rounded-xl border-2 p-3 sm:p-4 transition-all duration-200 hover:shadow-md bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500`}
+      >
+        <div className="text-center">
+          <div className="text-xl sm:text-2xl mb-2">{category.icon}</div>
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-1">{category.label}</h3>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{category.description}</p>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+
 
               {/* AI Features Info */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 sm:p-6">
@@ -214,7 +220,7 @@ const SubmitIncident: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting || !formData.title || !formData.description || !formData.category}
+                  disabled={isSubmitting ||  !formData.description }
                   className="flex-1 px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-2 sm:space-x-3 font-medium shadow-lg text-sm sm:text-base"
                 >
                   {isSubmitting ? (
