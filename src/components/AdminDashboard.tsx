@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, FileText, Settings, LogOut, User, Users, Clock, TrendingUp, Menu, X, Moon, Sun } from 'lucide-react';
+import { Home, BarChart3, FileText, Settings, LogOut, User, Users, Clock,  Menu, X, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
