@@ -19,7 +19,7 @@ interface AssignedResolver {
 }
 
 // Define interface for Incident response
-interface Incident {
+export interface Incident {
   '@odata.type': string;
   '@odata.id': string;
   '@odata.etag': string;
