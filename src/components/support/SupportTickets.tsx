@@ -99,33 +99,33 @@ const SupportTickets: React.FC = () => {
   });
 
   return (
-    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Assigned Tickets</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">Review and manage incident tickets assigned to your team</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Assigned Tickets</h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-2">Review and manage incident tickets assigned to your team</p>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
                 placeholder="Search tickets..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex items-center space-x-2">
-                <Filter className="h-4 w-4 text-gray-400" />
+                <Filter className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                 <select
                   value={priorityFilter}
                   onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option value="all">All Priorities</option>
                   <option value="high">High</option>
@@ -136,7 +136,7 @@ const SupportTickets: React.FC = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="all">All Status</option>
                 <option value="new">New</option>
@@ -151,11 +151,11 @@ const SupportTickets: React.FC = () => {
         {/* Tickets List */}
         <div className="space-y-4">
           {filteredTickets.map((ticket) => (
-            <div key={ticket.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+            <div key={ticket.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-4 space-y-4 lg:space-y-0">
                 <div className="flex-1">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mb-2 space-y-2 sm:space-y-0">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">{ticket.title}</h3>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{ticket.title}</h3>
                     <div className="flex flex-wrap gap-2">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(ticket.priority)}`}>
                         {ticket.priority.toUpperCase()}
@@ -166,8 +166,8 @@ const SupportTickets: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-500 font-mono mb-2">{ticket.id}</p>
-                  <p className="text-sm sm:text-base text-gray-700 mb-3">{ticket.description}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-mono mb-2">{ticket.id}</p>
+                  <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 mb-3">{ticket.description}</p>
                 </div>
                 <Link
                   to={`/support/ticket/${ticket.id}`}
@@ -179,16 +179,16 @@ const SupportTickets: React.FC = () => {
               </div>
 
               {/* AI Analysis */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 sm:p-4 mb-4">
                 <div className="flex items-start space-x-3">
-                  <div className="bg-blue-100 p-1 rounded">
+                  <div className="bg-blue-100 dark:bg-blue-900/50 p-1 rounded">
                     <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-xs sm:text-sm font-medium text-blue-900 mb-1">AI Analysis</h4>
-                    <p className="text-xs sm:text-sm text-blue-800">{ticket.aiSummary}</p>
+                    <h4 className="text-xs sm:text-sm font-medium text-blue-900 dark:text-blue-300 mb-1">AI Analysis</h4>
+                    <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-300">{ticket.aiSummary}</p>
                     <div className="mt-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300">
                         Predicted Severity: {ticket.aiSeverity}
                       </span>
                     </div>
@@ -197,7 +197,7 @@ const SupportTickets: React.FC = () => {
               </div>
 
               {/* Ticket Meta */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm text-gray-500 space-y-2 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm text-gray-500 dark:text-gray-400 space-y-2 sm:space-y-0">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0">
                   <span>Submitted by: <span className="font-medium">{ticket.submittedBy}</span></span>
                   <span>Category: <span className="font-medium">{ticket.category}</span></span>
@@ -210,12 +210,12 @@ const SupportTickets: React.FC = () => {
           {filteredTickets.length === 0 && (
             <div className="text-center py-8 sm:py-12">
               <div className="flex justify-center mb-4">
-                <div className="bg-gray-100 p-3 sm:p-4 rounded-full">
-                  <Search className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
+                <div className="bg-gray-100 dark:bg-gray-700 p-3 sm:p-4 rounded-full">
+                  <Search className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 dark:text-gray-500" />
                 </div>
               </div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No tickets found</h3>
-              <p className="text-sm sm:text-base text-gray-600">Try adjusting your search criteria or filters</p>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">No tickets found</h3>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Try adjusting your search criteria or filters</p>
             </div>
           )}
         </div>

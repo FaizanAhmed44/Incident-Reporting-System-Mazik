@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
 import SplashScreen from './components/SplashScreen';
 import Login from './components/Login';
 import EmployeeDashboard from './components/EmployeeDashboard';
@@ -36,13 +36,9 @@ function App() {
   }
 
   return (
-    <Router>
-      <AuthProvider>
-        <div className="min-h-screen bg-gray-50">
-          <AppRoutes />
-        </div>
-      </AuthProvider>  
-    </Router>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      <AppRoutes />
+    </div>
   );
 }
 

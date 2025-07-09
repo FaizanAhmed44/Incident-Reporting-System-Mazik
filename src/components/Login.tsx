@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Building2, Loader2, Shield, Zap, Users } from 'lucide-react';
+import { Building2, Loader2, Shield, Zap, Users, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,9 +35,9 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 flex flex-col lg:flex-row transition-colors duration-200">
       {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 p-8 xl:p-12 flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 dark:from-blue-800 dark:to-gray-900 p-8 xl:p-12 flex-col justify-between relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-24 h-24 xl:w-32 xl:h-32 border border-white rounded-full"></div>
@@ -100,6 +102,16 @@ const Login: React.FC = () => {
       {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="max-w-md w-full space-y-6 sm:space-y-8">
+          {/* Theme Toggle */}
+          <div className="flex justify-end">
+            <button
+              onClick={toggleTheme}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </button>
+          </div>
+
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-6 sm:mb-8">
             <div className="flex items-center justify-center mb-4">
@@ -107,10 +119,10 @@ const Login: React.FC = () => {
                 <Building2 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Incident Portal</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Incident Portal</h2>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-6 sm:p-8">
             {/* Header */}
             <div className="text-center mb-6 sm:mb-8">
               <div className="hidden lg:flex items-center justify-center mb-4">
@@ -118,13 +130,13 @@ const Login: React.FC = () => {
                   <Building2 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Welcome back</h2>
-              <p className="text-sm sm:text-base text-gray-600">Sign in to your account</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">Welcome back</h2>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Sign in to your account</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Email address
                 </label>
                 <input
@@ -133,7 +145,7 @@ const Login: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -141,7 +153,7 @@ const Login: React.FC = () => {
               </div>
               
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Password
                 </label>
                 <input
@@ -150,12 +162,29 @@ const Login: React.FC = () => {
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-              </div>            
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                <div className="flex items-center">
+                  <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                  />
+                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    Remember me
+                  </label>
+                </div>
+                <a href="#" className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors">
+                  Forgot password?
+                </a>
+              </div>
 
               <button
                 type="submit"
@@ -172,30 +201,37 @@ const Login: React.FC = () => {
                 )}
               </button>
             </form>
-           
+
+            {/* Azure AD Branding */}
+            <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-600">
+              <div className="flex items-center justify-center space-x-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
+                <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Secured by Microsoft Azure AD</span>
+              </div>
+            </div>
 
             {/* Demo Quick Login */}
-            <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
-              <p className="text-xs sm:text-sm text-gray-600 text-center mb-3 sm:mb-4">Demo Access:</p>
+            <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center mb-3 sm:mb-4">Demo Access:</p>
               <div className="grid grid-cols-1 gap-2">
                 <button
                   onClick={() => quickLogin('employee')}
                   disabled={isLoading}
-                  className="w-full text-xs sm:text-sm py-2 px-3 sm:px-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors disabled:opacity-50 font-medium"
+                  className="w-full text-xs sm:text-sm py-2 px-3 sm:px-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg transition-colors disabled:opacity-50 font-medium text-gray-900 dark:text-white"
                 >
                   Employee Portal
                 </button>
                 <button
                   onClick={() => quickLogin('support')}
                   disabled={isLoading}
-                  className="w-full text-xs sm:text-sm py-2 px-3 sm:px-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors disabled:opacity-50 font-medium"
+                  className="w-full text-xs sm:text-sm py-2 px-3 sm:px-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg transition-colors disabled:opacity-50 font-medium text-gray-900 dark:text-white"
                 >
                   Support Team
                 </button>
                 <button
                   onClick={() => quickLogin('admin')}
                   disabled={isLoading}
-                  className="w-full text-xs sm:text-sm py-2 px-3 sm:px-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors disabled:opacity-50 font-medium"
+                  className="w-full text-xs sm:text-sm py-2 px-3 sm:px-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg transition-colors disabled:opacity-50 font-medium text-gray-900 dark:text-white"
                 >
                   Administrator
                 </button>
