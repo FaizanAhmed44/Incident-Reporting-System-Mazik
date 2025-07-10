@@ -1,54 +1,6 @@
-  // import apiClient from './axios';
+import apiClient from './axios';
 
-  
-  // interface PowerAutomateResponse {
-  //   classification: {
-  //     category: string;
-  //     severity: string;
-  //     summary: string;
-  //     email: string;
-  //   };
-  //   staff_assignment: {
-  //     assigned_staff_id: string;
-  //     assigned_staff_code: string;
-  //     assigned_department: string;
-  //     staff_skillset: string;
-  //   };
-  // }
-
-  // // API call function for Power Automate flow
-  // export const triggerPowerAutomateFlow = async (description: string): Promise<PowerAutomateResponse> => {
-  //   try {
-  //     const response = await apiClient.post<PowerAutomateResponse>(
-  //       import.meta.env.VITE_INCIDENT_GENERATE_API_URL,
-  //       { description }
-  //     );
-  //     return response.data;
-  //   } catch (error) {
-  //     throw new Error('Failed to trigger Power Automate flow');
-  //   }
-  // };
-
-  import apiClient from './axios';
-
-
-  // Define interface for Power Automate API response based on provided structure
-  interface PowerAutomateResponse {
-    classification: {
-      category: string;
-      severity: string;
-      summary: string;
-      email: string;
-    };
-    staff_assignment: {
-      assigned_staff_id: string;
-      assigned_staff_code: string;
-      assigned_department: string;
-      staff_skillset: string;
-    };
-  }
-
-  interface IncidentPayload {
+interface IncidentPayload {
   Description: string;
   Status: string;
   DepartmentType: string;
@@ -63,20 +15,7 @@ interface AiResponsePayload {
   SuggestionSeverity: string;
 }
 
-  // API call function for Power Automate flow
-  export const triggerPowerAutomateFlow = async (description: string): Promise<PowerAutomateResponse> => {
-    try {
-      const response = await apiClient.post<PowerAutomateResponse>(
-        import.meta.env.VITE_INCIDENT_GENERATE_API_URL,
-        { description }
-      );
-      return response.data;
-    } catch (error) {
-      throw new Error('Failed to trigger Power Automate flow');
-    }
-  };
-
-  export interface IncidentConfirmationPayload {
+export interface IncidentConfirmationPayload {
   incident: IncidentPayload;
   ai_response: AiResponsePayload;
 }
@@ -85,20 +24,53 @@ export interface ConfirmedIncidentResponse {
   url: string;
 }
 
-export const confirmIncident = async (payload: IncidentConfirmationPayload): Promise<ConfirmedIncidentResponse> => {
-  try {
-    // We use a new environment variable for this specific Power Automate URL
-    const apiUrl = import.meta.env.VITE_CONFIRM_INCIDENT_API_URL;
-    
-    if (!apiUrl) {
-      throw new Error("VITE_CONFIRM_INCIDENT_API_URL is not defined in your .env file.");
-    }
+interface SubmitIncidentPayload {
+  description: string;
+}
 
-    const response = await apiClient.post<ConfirmedIncidentResponse>(apiUrl, payload);
+interface SubmitIncidentResponse {
+  classification: {
+    category: string;
+    severity: string;
+    summary: string;
+    email: string;
+  };
+  staff_assignment: {
+    assigned_staff_email: string;
+    assigned_staff_name: string;
+    assigned_department: string;
+    staff_skillset: string;
+  };
+}
+
+export const submitIncident = async (payload: SubmitIncidentPayload): Promise<SubmitIncidentResponse> => {
+  try {
+    const apiUrl = import.meta.env.VITE_SUBMIT_INCIDENT_API_URL;
+    if (!apiUrl) {
+      throw new Error('VITE_SUBMIT_INCIDENT_API_URL is not defined in environment variables');
+    }
+    console.log('Submitting incident to:', apiUrl); // Debugging log
+    const response = await apiClient.post<SubmitIncidentResponse>(apiUrl, payload);
+    console.log('Submit incident response:', response.data); // Debugging log
     return response.data;
   } catch (error) {
-    // More specific error handling
+    console.error('Failed to submit incident:', error);
+    throw new Error('API call to submit the incident failed');
+  }
+};
+
+export const confirmIncident = async (payload: IncidentConfirmationPayload): Promise<ConfirmedIncidentResponse> => {
+  try {
+    const apiUrl = import.meta.env.VITE_CONFIRM_INCIDENT_API_URL;
+    if (!apiUrl) {
+      throw new Error('VITE_CONFIRM_INCIDENT_API_URL is not defined in environment variables');
+    }
+    console.log('Confirming incident to:', apiUrl); // Debugging log
+    const response = await apiClient.post<ConfirmedIncidentResponse>(apiUrl, payload);
+    console.log('Confirm incident response:', response.data); // Debugging log
+    return response.data;
+  } catch (error) {
     console.error('Failed to confirm incident:', error);
-    throw new Error('API call to confirm the incident failed.');
+    throw new Error('API call to confirm the incident failed');
   }
 };
