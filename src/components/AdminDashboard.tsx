@@ -1,9 +1,10 @@
 import React from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, FileText, Settings, LogOut, User, Users, Clock,  Menu, X, Moon, Sun } from 'lucide-react';
+import { Home, BarChart3, FileText, Settings, LogOut, User, Users, Clock,  Menu, X, Moon, Sun ,UserCog} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Incident, tickets_to_admin } from '../api/tickets_to_admin';
+import EmployeeManagement from './admin/EmployeeManagement';
 
 const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -14,6 +15,7 @@ const AdminDashboard: React.FC = () => {
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: Home },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    { name: 'Employee Management', href: '/admin/employees', icon: UserCog },
     { name: 'All Tickets', href: '/admin/tickets', icon: FileText },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
@@ -121,6 +123,7 @@ const AdminDashboard: React.FC = () => {
         <Routes>
           <Route path="/" element={<AdminHome />} />
           <Route path="/analytics" element={<AdminAnalytics />} />
+          <Route path="/employees" element={<EmployeeManagement />} />          
           <Route path="/tickets" element={<AdminTickets />} />
           <Route path="/settings" element={<AdminSettings />} />
         </Routes>
