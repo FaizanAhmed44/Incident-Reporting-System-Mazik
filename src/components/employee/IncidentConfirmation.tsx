@@ -542,7 +542,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Edit3, RefreshCw, CheckCircle, User, Mail, Building, FileText, Zap, ArrowLeft, Save, X, AlertTriangle } from 'lucide-react';
-import { confirmIncident, IncidentConfirmationPayload,  regenerateIncident } from '../../api/incidentApi';
+import { confirmIncident, IncidentConfirmationPayloads,  regenerateIncident } from '../../api/incidentApi';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface LocationState {
@@ -690,21 +690,43 @@ const IncidentConfirmation: React.FC = () => {
     setIsSubmitting(true);
     setSubmissionError(null);
 
-    const payload: IncidentConfirmationPayload = {
-      incident: {
-        Description: processedData.description,
-        Status: 'New',
-        DepartmentType: processedData.department,
-        AssignedResolverGUID: "848cea09-9c37-4f3f-96fc-9f0e892a4143",
-        ReportedByGUID: processedData.reportedById,
-      },
-      ai_response: {
-        SuggestedDesc: processedData.summary,
-        SuggestedEmail: processedData.email,
-        SuggestedResolverGUID: "848cea09-9c37-4f3f-96fc-9f0e892a4143",
-        SuggestionSeverity: processedData.priority,
-      },
+    const incidentData = {
+      Title: "System Downtime",
+      Description: "Server crashed due to overload",
+      Status: "In Progress",
+      DepartmentType: "IT",
+      AssignedResolverGUID: "848cea09-9c37-4f3f-96fc-9f0e892a4143",
+      ReportedByGUID: "da6cee8a-855b-4dee-a068-130428417297",
+      ResolverEmail: "it.support@example.com",
+      ReporterEmail: "user.it@example.com",
+      ReporterName: "Alice Johnson",
+      ResolverName: "Bob Wilson",
+      Severity: "High",
+      descriptionSummary: "Server crash, IT team working on it",
+      emailDraft: "Subject: Downtime Update\nDear Alice, we are addressing the server issue."
     };
+    
+    
+
+    const payload: IncidentConfirmationPayloads = {
+      incident: {            
+        Title: "System Downtime",
+        Description: "Server crashed due to overload",
+        Status: "In Progress",
+        DepartmentType: "IT",
+        AssignedResolverGUID: "848cea09-9c37-4f3f-96fc-9f0e892a4143",
+        ReportedByGUID: "da6cee8a-855b-4dee-a068-130428417297",
+        ResolverEmail: "it.support@example.com",
+        ReporterEmail: "user.it@example.com",
+        ReporterName: "Alice Johnson",
+        ResolverName: "Bob Wilson",
+        Severity: "High",
+        descriptionSummary: "Server crash, IT team working on it",
+        emailDraft: "Subject: Downtime Update\nDear Alice, we are addressing the server issue."            
+      },
+     
+    };
+    
 
     try {
       const response = await confirmIncident(payload);

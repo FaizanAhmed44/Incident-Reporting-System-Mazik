@@ -8,6 +8,27 @@ interface IncidentPayload {
   ReportedByGUID: string;
 }
 
+export interface IncidentConfirmationPayloads {
+    incident: {
+      Title: string;
+      Description: string;
+      Status: string;
+      DepartmentType: string;
+      AssignedResolverGUID: string;
+      ReportedByGUID: string;
+      ResolverEmail: string;
+      ReporterEmail: string;
+      ReporterName: string;
+      ResolverName: string;
+      Severity: 'Low' | 'Medium' | 'High' | 'Critical'; // Adjust if needed
+      descriptionSummary: string;
+      emailDraft: string;
+    }
+};
+  
+  
+
+
 interface AiResponsePayload {
   SuggestedDesc: string;
   SuggestedEmail: string;
@@ -70,7 +91,7 @@ export const submitIncident = async (payload: SubmitIncidentPayload): Promise<Su
   }
 };
 
-export const confirmIncident = async (payload: IncidentConfirmationPayload): Promise<ConfirmedIncidentResponse> => {
+export const confirmIncident = async (payload: IncidentConfirmationPayloads): Promise<ConfirmedIncidentResponse> => {
   try {
     const apiUrl = import.meta.env.VITE_CONFIRM_INCIDENT_API_URL;
     if (!apiUrl) {
