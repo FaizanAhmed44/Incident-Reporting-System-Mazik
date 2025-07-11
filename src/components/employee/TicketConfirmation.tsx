@@ -346,17 +346,7 @@ const TicketConfirmation: React.FC = () => {
                     <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{processedData.priority}</p>
                   </div>
                 </div>
-                <div className="mt-4 text-center">
-                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-2">Tracking Link</h3>
-                  <a
-                    href={confirmationUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm sm:text-base text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    View Incident
-                  </a>
-                </div>
+                
               </div>
             </div>
 

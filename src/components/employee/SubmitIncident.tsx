@@ -261,6 +261,66 @@ const SubmitIncident: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const categories = [
+    { 
+      value: 'it-support', 
+      label: 'IT Support',
+      description: 'Hardware, software, network issues',
+      icon: '💻',
+      color: 'bg-blue-50 border-blue-200 text-blue-700'
+    },
+    { 
+      value: 'hr', 
+      label: 'Human Resources',
+      description: 'Policy, benefits, workplace issues',
+      icon: '👥',
+      color: 'bg-green-50 border-green-200 text-green-700'
+    },
+    { 
+      value: 'facilities', 
+      label: 'Facilities',
+      description: 'Building, equipment, maintenance',
+      icon: '🏢',
+      color: 'bg-purple-50 border-purple-200 text-purple-700'
+    },
+    { 
+      value: 'security', 
+      label: 'Security',
+      description: 'Unauthorized access, theft, threats',
+      icon: '🔒',
+      color: 'bg-red-50 border-red-200 text-red-700'
+    },
+    { 
+      value: 'finance', 
+      label: 'Finance',
+      description: 'Budget issues, reimbursements, fraud',
+      icon: '💰',
+      color: 'bg-yellow-50 border-yellow-200 text-yellow-700'
+    },
+    { 
+      value: 'health-safety', 
+      label: 'Health & Safety',
+      description: 'Injuries, hazards, compliance concerns',
+      icon: '🩺',
+      color: 'bg-pink-50 border-pink-200 text-pink-700'
+    },
+    { 
+      value: 'legal', 
+      label: 'Legal',
+      description: 'Compliance, legal risks, disputes',
+      icon: '⚖️',
+      color: 'bg-gray-50 border-gray-200 text-gray-700'
+    },
+    { 
+      value: 'other', 
+      label: 'Other',
+      description: 'Anything not covered above',
+      icon: '❓',
+      color: 'bg-indigo-50 border-indigo-200 text-indigo-700'
+    }
+  ];
+  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -361,6 +421,28 @@ const SubmitIncident: React.FC = () => {
                   {formData.description.length}/500 characters
                 </div>
               </div>
+
+{/* Category Display (Horizontally Scrollable, No Selection) */}
+<div>
+  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+    Available Category <span className="text-red-500">*</span>
+  </label>
+  <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+    {categories.map(category => (
+      <div
+        key={category.value}
+        className={`relative min-w-[220px] sm:min-w-[240px] rounded-xl border-2 p-3 sm:p-4 transition-all duration-200 hover:shadow-md bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500`}
+      >
+        <div className="text-center">
+          <div className="text-xl sm:text-2xl mb-2">{category.icon}</div>
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-1">{category.label}</h3>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{category.description}</p>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
 
               {/* AI Features Info */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 sm:p-6">
