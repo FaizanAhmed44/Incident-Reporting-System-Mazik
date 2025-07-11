@@ -20,7 +20,7 @@ export interface IncidentConfirmationPayloads {
       ReporterEmail: string;
       ReporterName: string;
       ResolverName: string;
-      Severity: 'Low' | 'Medium' | 'High' | 'Critical'; // Adjust if needed
+      Severity: string;
       descriptionSummary: string;
       emailDraft: string;
     }
