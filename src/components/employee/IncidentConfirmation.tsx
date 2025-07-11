@@ -689,25 +689,7 @@ const IncidentConfirmation: React.FC = () => {
 
     setIsSubmitting(true);
     setSubmissionError(null);
-
-    const incidentData = {
-      Title: "System Downtime",
-      Description: "Server crashed due to overload",
-      Status: "In Progress",
-      DepartmentType: "IT",
-      AssignedResolverGUID: "848cea09-9c37-4f3f-96fc-9f0e892a4143",
-      ReportedByGUID: "da6cee8a-855b-4dee-a068-130428417297",
-      ResolverEmail: "it.support@example.com",
-      ReporterEmail: "user.it@example.com",
-      ReporterName: "Alice Johnson",
-      ResolverName: "Bob Wilson",
-      Severity: "High",
-      descriptionSummary: "Server crash, IT team working on it",
-      emailDraft: "Subject: Downtime Update\nDear Alice, we are addressing the server issue."
-    };
-    
-    
-
+        
     const payload: IncidentConfirmationPayloads = {
       incident: {            
         Title: "System Downtime",
