@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit3, Trash2, X, User, Building, Shield, Calendar } from 'lucide-react';
+import { get_users, Staff } from '../../api/users_to_admin';
 
 interface Employee {
   id: string;
   name: string;
   email: string;
   department: string;
-  role: 'employee' | 'support' | 'admin';
+  role: 'Employee' | 'Staff' | 'Admin';
   employeeId: string;
   joinDate: string;
   status: 'active' | 'inactive';
@@ -14,53 +15,7 @@ interface Employee {
 }
 
 const EmployeeManagement: React.FC = () => {
-  const [employees, setEmployees] = useState<Employee[]>([
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'john.doe@company.com',
-      department: 'Sales',
-      role: 'employee',
-      employeeId: 'EMP-001',
-      joinDate: '2023-01-15',
-      status: 'active',
-      lastLogin: '2024-01-18T10:30:00Z'
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@company.com',
-      department: 'IT Support',
-      role: 'support',
-      employeeId: 'SUP-001',
-      joinDate: '2022-08-20',
-      status: 'active',
-      lastLogin: '2024-01-18T09:15:00Z'
-    },
-    {
-      id: '3',
-      name: 'Mike Chen',
-      email: 'mike.chen@company.com',
-      department: 'HR',
-      role: 'employee',
-      employeeId: 'EMP-002',
-      joinDate: '2023-03-10',
-      status: 'active',
-      lastLogin: '2024-01-17T16:45:00Z'
-    },
-    {
-      id: '4',
-      name: 'Admin User',
-      email: 'admin@company.com',
-      department: 'Administration',
-      role: 'admin',
-      employeeId: 'ADM-001',
-      joinDate: '2022-01-01',
-      status: 'active',
-      lastLogin: '2024-01-18T11:00:00Z'
-    }
-  ]);
-
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -68,18 +23,47 @@ const EmployeeManagement: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [newEmployee, setNewEmployee] = useState({
     name: '',
     email: '',
     department: '',
-    role: 'employee' as 'employee' | 'support' | 'admin',
+    role: 'Employee' as 'Employee' | 'Staff' | 'Admin',
     employeeId: '',
     password: ''
   });
 
-  const departments = ['Sales', 'IT Support', 'HR', 'Marketing', 'Finance', 'Administration', 'Facilities'];
-  const roles = ['employee', 'support', 'admin'];
+  const departments = ['Sales', 'IT', 'HR', , 'Finance', 'Creative'];
+  const roles = ['employee', 'staff', 'admin'];
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        setLoading(true);
+        const staffData = await get_users();
+        const mappedEmployees: Employee[] = staffData.map((staff: Staff) => ({
+          id: staff.cr6dd_UserID.cr6dd_userid,
+          name: staff.cr6dd_UserID.cr6dd_name,
+          email: staff.cr6dd_UserID.cr6dd_email,
+          department: staff.cr6dd_departmentname,
+          role: staff.cr6dd_UserID.cr6dd_role.toLowerCase() as 'Employee' | 'Staff' | 'Admin',
+          employeeId: staff.cr6dd_UserID.cr6dd_userid,
+          joinDate: staff.cr6dd_UserID.createdon.split('T')[0],
+          status: staff.cr6dd_availability === 'True' ? 'active' : 'inactive',
+          lastLogin: undefined
+        }));
+        setEmployees(mappedEmployees);
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to load employees. Please try again later.');
+        setLoading(false);
+      }
+    };
+
+    fetchEmployees();
+  }, []);
 
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -105,7 +89,7 @@ const EmployeeManagement: React.FC = () => {
       name: '',
       email: '',
       department: '',
-      role: 'employee',
+      role: 'Employee',
       employeeId: '',
       password: ''
     });
@@ -133,7 +117,7 @@ const EmployeeManagement: React.FC = () => {
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-      case 'support': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+      case 'staff': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
       case 'employee': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
@@ -145,10 +129,29 @@ const EmployeeManagement: React.FC = () => {
       : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
   };
 
+  if (loading) {
+    return (
+      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-gray-600 dark:text-gray-300">Loading employees...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-red-600 dark:text-red-300">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Employee Management</h1>
@@ -163,7 +166,6 @@ const EmployeeManagement: React.FC = () => {
           </button>
         </div>
 
-        {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             <div className="relative">
@@ -211,7 +213,6 @@ const EmployeeManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Employee Table */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -298,7 +299,6 @@ const EmployeeManagement: React.FC = () => {
           )}
         </div>
 
-        {/* Add Employee Modal */}
         {showAddModal && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
@@ -345,7 +345,7 @@ const EmployeeManagement: React.FC = () => {
                       value={newEmployee.employeeId}
                       onChange={(e) => setNewEmployee({...newEmployee, employeeId: e.target.value})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder="Enter employee ID"
+                      placeholder="Enter Employee ID"
                     />
                   </div>
 
@@ -367,7 +367,7 @@ const EmployeeManagement: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
                     <select
                       value={newEmployee.role}
-                      onChange={(e) => setNewEmployee({...newEmployee, role: e.target.value as 'employee' | 'support' | 'admin'})}
+                      onChange={(e) => setNewEmployee({...newEmployee, role: e.target.value as 'Employee' | 'Staff' | 'Admin'})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       {roles.map(role => (
@@ -408,7 +408,6 @@ const EmployeeManagement: React.FC = () => {
           </div>
         )}
 
-        {/* Edit Employee Modal */}
         {editingEmployee && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
@@ -463,7 +462,7 @@ const EmployeeManagement: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
                     <select
                       value={editingEmployee.role}
-                      onChange={(e) => setEditingEmployee({...editingEmployee, role: e.target.value as 'employee' | 'support' | 'admin'})}
+                      onChange={(e) => setEditingEmployee({...editingEmployee, role: e.target.value as 'Employee' | 'Staff' | 'Admin'})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       {roles.map(role => (
@@ -504,7 +503,6 @@ const EmployeeManagement: React.FC = () => {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">

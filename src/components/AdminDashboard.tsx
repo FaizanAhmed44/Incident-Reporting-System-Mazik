@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, FileText, Settings, LogOut, User, Users, Clock,  Menu, X, Moon, Sun ,UserCog} from 'lucide-react';
+import { Home, BarChart3, FileText, LogOut, User, Users, Clock,  Menu, X, Moon, Sun ,UserCog} from 'lucide-react'; // Settings
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Incident, tickets_to_admin } from '../api/tickets_to_admin';
@@ -15,9 +15,9 @@ const AdminDashboard: React.FC = () => {
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: Home },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-    { name: 'Employee Management', href: '/admin/employees', icon: UserCog },
     { name: 'All Tickets', href: '/admin/tickets', icon: FileText },
-    { name: 'Settings', href: '/admin/settings', icon: Settings },
+    // { name: 'Settings', href: '/admin/settings', icon: Settings },
+    { name: 'Employees', href: '/admin/employees', icon: UserCog },
   ];
 
   const isActive = (path: string) => {
@@ -125,7 +125,7 @@ const AdminDashboard: React.FC = () => {
           <Route path="/analytics" element={<AdminAnalytics />} />
           <Route path="/employees" element={<EmployeeManagement />} />          
           <Route path="/tickets" element={<AdminTickets />} />
-          <Route path="/settings" element={<AdminSettings />} />
+          {/* <Route path="/settings" element={<AdminSettings />} /> */}
         </Routes>
       </div>
     </div>
@@ -436,32 +436,32 @@ const AdminTickets: React.FC = () => {
 };
 
 
-const AdminSettings: React.FC = () => {
-  return (
-    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 sm:mb-8">System Settings</h1>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Team Management</h3>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Configure support teams and role assignments.</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">SLA Configuration</h3>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Set up service level agreements and escalation rules.</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">AI Settings</h3>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Configure AI-powered ticket analysis and routing.</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Integration Settings</h3>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Manage external system integrations and APIs.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+// const AdminSettings: React.FC = () => {
+//   return (
+//     <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
+//       <div className="max-w-4xl mx-auto">
+//         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 sm:mb-8">System Settings</h1>
+//         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+//           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+//             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Team Management</h3>
+//             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Configure support teams and role assignments.</p>
+//           </div>
+//           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+//             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">SLA Configuration</h3>
+//             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Set up service level agreements and escalation rules.</p>
+//           </div>
+//           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+//             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">AI Settings</h3>
+//             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Configure AI-powered ticket analysis and routing.</p>
+//           </div>
+//           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+//             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Integration Settings</h3>
+//             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Manage external system integrations and APIs.</p>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
 
 export default AdminDashboard;
