@@ -178,3 +178,39 @@ export const regenerateIncident = async (payload: RegenerateIncidentPayload): Pr
     throw new Error('API call to regenerate incident failed');
   }
 };
+
+
+// --- SHARJEEL NEW CODE FOR FETCHING TICKETS ---
+
+// 1. Define the interface for a single ticket that EXACTLY matches the API response.
+interface TicketFromApi {
+  incidentID: string;
+  title: string | null; // Title can be null
+  description: string;
+  status: string; // e.g., "New", "In Progress"
+  assignedMember: string; // This is a GUID
+  category: string;
+  lastUpdated: string; // ISO date string
+}
+
+// 2. Define the interface for the overall API response.
+interface GetUserTicketsResponse {
+  tickets: TicketFromApi[];
+}
+
+// 3. The API function (this function itself doesn't need changes, just the interfaces above)
+export const getUserTickets = async (userId: string): Promise<GetUserTicketsResponse> => {
+  try {
+    const apiUrl = import.meta.env.VITE_GET_TICKETS_API_URL;
+    if (!apiUrl) {
+      throw new Error("VITE_GET_TICKETS_API_URL is not defined in your .env file.");
+    }
+    
+    const payload = { currUser: userId };
+    const response = await apiClient.post<GetUserTicketsResponse>(apiUrl, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch user tickets:', error);
+    throw new Error('Could not retrieve tickets from the server.');
+  }
+};

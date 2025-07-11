@@ -542,7 +542,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Edit3, RefreshCw, CheckCircle, User, Mail, Building, FileText, Zap, ArrowLeft, Save, X, AlertTriangle } from 'lucide-react';
-import { confirmIncident, IncidentConfirmationPayload, submitIncident, regenerateIncident } from '../../api/incidentApi';
+import { confirmIncident, IncidentConfirmationPayload,  regenerateIncident } from '../../api/incidentApi';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface LocationState {
