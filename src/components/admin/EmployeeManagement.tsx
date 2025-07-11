@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Plus, Edit3, Trash2, Eye, EyeOff, Save, X, User, Mail, Building, Shield, Calendar } from 'lucide-react';
+import { Search, Plus, Edit3, Trash2, X, User, Building, Shield, Calendar } from 'lucide-react';
 
 interface Employee {
   id: string;
