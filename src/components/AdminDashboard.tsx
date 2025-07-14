@@ -3,21 +3,20 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Home, BarChart3, FileText, LogOut, User, Users, Clock,  Menu, X, Moon, Sun ,UserCog} from 'lucide-react'; // Settings
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Incident, tickets_to_admin } from '../api/tickets_to_admin';
-import EmployeeManagement from './admin/EmployeeManagement';
+import StaffManagement from './admin/StaffManagement';
+import TicketsManagement from './admin/TicketManagement';
 
 const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);``
 
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: Home },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-    { name: 'All Tickets', href: '/admin/tickets', icon: FileText },
-    // { name: 'Settings', href: '/admin/settings', icon: Settings },
-    { name: 'Employees', href: '/admin/employees', icon: UserCog },
+    { name: 'Tickets Management', href: '/admin/tickets', icon: FileText },
+    { name: 'Staff Management', href: '/admin/staff', icon: UserCog },
   ];
 
   const isActive = (path: string) => {
@@ -123,9 +122,8 @@ const AdminDashboard: React.FC = () => {
         <Routes>
           <Route path="/" element={<AdminHome />} />
           <Route path="/analytics" element={<AdminAnalytics />} />
-          <Route path="/employees" element={<EmployeeManagement />} />          
-          <Route path="/tickets" element={<AdminTickets />} />
-          {/* <Route path="/settings" element={<AdminSettings />} /> */}
+          <Route path="/staff" element={<StaffManagement />} />
+          <Route path="/tickets" element={<TicketsManagement />} />
         </Routes>
       </div>
     </div>
@@ -369,72 +367,71 @@ const AdminAnalytics: React.FC = () => {
 };
 
 
-const AdminTickets: React.FC = () => {
-  const [tickets, setTickets] = React.useState<Incident[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+// const AdminTickets: React.FC = () => {
+//   const [tickets, setTickets] = React.useState<Incident[]>([]);
+//   const [loading, setLoading] = React.useState(true);
+//   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    const fetchTickets = async () => {
-      try {
-        const data = await tickets_to_admin();
-        setTickets(data);
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to load tickets');
-        setLoading(false);
-      }
-    };
-    fetchTickets();
-  }, []);
+//   React.useEffect(() => {
+//     const fetchTickets = async () => {
+//       try {
+//         const data = await tickets_to_admin();
+//         setTickets(data);
+//         setLoading(false);
+//       } catch (err) {
+//         setError('Failed to load tickets');
+//         setLoading(false);
+//       }
+//     };
+//     fetchTickets();
+//   }, []);
 
-  return (
-    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 sm:mb-8">All Tickets</h1>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-          {loading ? (
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Loading tickets...</p>
-          ) : error ? (
-            <p className="text-sm sm:text-base text-red-600 dark:text-red-400">{error}</p>
-          ) : tickets.length === 0 ? (
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">No tickets found</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Incident ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Title</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Department</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Reported By</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Assigned Resolver</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {tickets.map((ticket) => (
-                    <tr key={ticket.cr6dd_incidentsid} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_incidentid}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_title || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_description}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_departmenttype}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_status}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_ReportedBy.cr6dd_name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_AssignedResolver.cr6dd_staffid}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
+//   return (
+//     <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
+//       <div className="max-w-7xl mx-auto">
+//         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 sm:mb-8">All Tickets</h1>
+//         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+//           {loading ? (
+//             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Loading tickets...</p>
+//           ) : error ? (
+//             <p className="text-sm sm:text-base text-red-600 dark:text-red-400">{error}</p>
+//           ) : tickets.length === 0 ? (
+//             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">No tickets found</p>
+//           ) : (
+//             <div className="overflow-x-auto">
+//               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+//                 <thead className="bg-gray-50 dark:bg-gray-700">
+//                   <tr>
+//                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Incident ID</th>
+//                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Title</th>
+//                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
+//                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Department</th>
+//                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+//                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Reported By</th>
+//                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Assigned Resolver</th>
+//                   </tr>
+//                 </thead>
+//                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+//                   {tickets.map((ticket) => (
+//                     <tr key={ticket.cr6dd_incidentsid} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+//                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_incidentid}</td>
+//                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_title || 'N/A'}</td>
+//                       <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_description}</td>
+//                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_departmenttype}</td>
+//                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_status}</td>
+//                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_ReportedBy.cr6dd_name}</td>
+//                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{ticket.cr6dd_AssignedResolver.cr6dd_staffid}</td>
+//                     </tr>
+//                   ))}
+//                 </tbody>
+//               </table>
+//             </div>
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
 
 // const AdminSettings: React.FC = () => {
 //   return (

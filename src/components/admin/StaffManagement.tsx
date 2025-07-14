@@ -1,139 +1,184 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit3, Trash2, X, User, Building, Shield, Calendar } from 'lucide-react';
+import { Search, Plus, Edit3, Trash2, X, User, Building, Calendar } from 'lucide-react';
 import { get_users, Staff } from '../../api/users_to_admin';
+import { addStaffUser } from '../../api/add_staff';
+import { updateStaffUser, UpdateStaffRequest } from '../../api/edit_staff';
+import { deleteStaffUser } from '../../api/delete_staff';
 
-interface Employee {
+interface NewStaff {
   id: string;
   name: string;
   email: string;
   department: string;
-  role: 'Employee' | 'Staff' | 'Admin';
-  employeeId: string;
+  skillset: string;
   joinDate: string;
   status: 'active' | 'inactive';
   lastLogin?: string;
 }
 
-const EmployeeManagement: React.FC = () => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
+const StaffManagement: React.FC = () => {
+  const [staffMembers, setStaffMembers] = useState<NewStaff[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
-  const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [editingStaff, setEditingStaff] = useState<NewStaff | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [newEmployee, setNewEmployee] = useState({
+  const [newStaff, setNewStaff] = useState({
     name: '',
     email: '',
     department: '',
-    role: 'Employee' as 'Employee' | 'Staff' | 'Admin',
-    employeeId: '',
+    skillset: '',
     password: ''
   });
 
-  const departments = ['Sales', 'IT', 'HR', , 'Finance', 'Creative'];
-  const roles = ['employee', 'staff', 'admin'];
+  const departments = ['IT Support', 'HR', 'Finance', 'Operations'];
 
   useEffect(() => {
-    const fetchEmployees = async () => {
+    const fetchStaff = async () => {
       try {
         setLoading(true);
         const staffData = await get_users();
-        const mappedEmployees: Employee[] = staffData.map((staff: Staff) => ({
+        const mappedStaff: NewStaff[] = staffData.map((staff: Staff) => ({
           id: staff.cr6dd_UserID.cr6dd_userid,
           name: staff.cr6dd_UserID.cr6dd_name,
           email: staff.cr6dd_UserID.cr6dd_email,
           department: staff.cr6dd_departmentname,
-          role: staff.cr6dd_UserID.cr6dd_role.toLowerCase() as 'Employee' | 'Staff' | 'Admin',
-          employeeId: staff.cr6dd_UserID.cr6dd_userid,
+          skillset: staff.cr6dd_skillset || '',
           joinDate: staff.cr6dd_UserID.createdon.split('T')[0],
           status: staff.cr6dd_availability === 'True' ? 'active' : 'inactive',
           lastLogin: undefined
         }));
-        setEmployees(mappedEmployees);
+        setStaffMembers(mappedStaff);
         setLoading(false);
       } catch (err) {
-        setError('Failed to load employees. Please try again later.');
+        setError('Failed to load staff members. Please try again later.');
         setLoading(false);
       }
     };
 
-    fetchEmployees();
+    fetchStaff();
   }, []);
 
-  const filteredEmployees = employees.filter(employee => {
-    const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         employee.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = departmentFilter === 'all' || employee.department === departmentFilter;
-    const matchesRole = roleFilter === 'all' || employee.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
+  const filteredStaff = staffMembers.filter(staff => {
+    const matchesSearch = staff.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         staff.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         staff.skillset.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDepartment = departmentFilter === 'all' || staff.department === departmentFilter;
+    const matchesStatus = statusFilter === 'all' || staff.status === statusFilter;
     
-    return matchesSearch && matchesDepartment && matchesRole && matchesStatus;
+    return matchesSearch && matchesDepartment && matchesStatus;
   });
 
-  const handleAddEmployee = () => {
-    const employee: Employee = {
-      id: Date.now().toString(),
-      ...newEmployee,
-      joinDate: new Date().toISOString().split('T')[0],
-      status: 'active'
-    };
-    
-    setEmployees([...employees, employee]);
-    setNewEmployee({
-      name: '',
-      email: '',
-      department: '',
-      role: 'Employee',
-      employeeId: '',
-      password: ''
-    });
-    setShowAddModal(false);
-  };
-
-  const handleEditEmployee = (employee: Employee) => {
-    setEditingEmployee({ ...employee });
-  };
-
-  const handleSaveEdit = () => {
-    if (editingEmployee) {
-      setEmployees(employees.map(emp => 
-        emp.id === editingEmployee.id ? editingEmployee : emp
-      ));
-      setEditingEmployee(null);
+  const handleAddStaff = async () => {
+    try {
+      const response = await addStaffUser(newStaff);
+      const newStaffMember: NewStaff = {
+        id: response.staff_id,
+        name: newStaff.name,
+        email: newStaff.email,
+        department: newStaff.department,
+        skillset: newStaff.skillset,
+        joinDate: new Date().toISOString().split('T')[0],
+        status: 'active',
+        lastLogin: undefined
+      };
+      setStaffMembers([...staffMembers, newStaffMember]);
+      setNewStaff({
+        name: '',
+        email: '',
+        department: '',
+        skillset: '',
+        password: ''
+      });
+      setShowAddModal(false);
+    } catch (err) {
+      setError('Failed to add staff member. Please try again.');
     }
   };
 
-  const handleDeleteEmployee = (id: string) => {
-    setEmployees(employees.filter(emp => emp.id !== id));
-    setShowDeleteConfirm(null);
+  const handleEditStaff = (staff: NewStaff) => {
+    setEditingStaff({ ...staff });
   };
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-      case 'staff': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-      case 'employee': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+const handleSaveEdit = async () => {
+    if (editingStaff) {
+      try {
+        const updateData: UpdateStaffRequest = {
+          id: editingStaff.id,
+          name: editingStaff.name,
+          email: editingStaff.email,
+          department: editingStaff.department,
+          skillset: editingStaff.skillset,
+          status: editingStaff.status === 'active' ? 'True' : 'False',
+          // Password is optional and not included in the edit modal, so omitted
+        };
+
+        await updateStaffUser(updateData); // Call the API to update staff
+        setStaffMembers(staffMembers.map(emp =>
+          emp.id === editingStaff.id ? editingStaff : emp
+        )); // Update local state
+        setEditingStaff(null); // Close the modal
+      } catch (err) {
+        setError('Failed to update staff member. Please try again.'); // Set error state
+      }
     }
   };
 
-  const getStatusColor = (status: string) => {
-    return status === 'active' 
-      ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
-      : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+  const handleDeleteStaff = async (id: string) => { // CHANGE 2: Updated handleDeleteStaff to use API
+    try {
+      // Send DELETE request to the API
+      const deleteData = { id };
+      const response = await deleteStaffUser(deleteData);
+      console.log('Staff deleted successfully:', response); // Log success for debugging
+
+      // Update local state
+      setStaffMembers(staffMembers.filter(emp => emp.id !== id));
+      setShowDeleteConfirm(null);
+      setError(null); // Clear any previous errors
+    } catch (err: any) {
+      // Improved error handling with detailed logging
+      console.error('Error in handleDeleteStaff:', {
+        message: err.message,
+        response: err.response ? {
+          status: err.response.status,
+          data: err.response.data,
+        } : 'No response data',
+      });
+
+      // Provide specific error message based on response
+      let errorMessage = 'Failed to delete staff member. Please try again.';
+      if (err.response) {
+        if (err.response.status === 400) {
+          errorMessage = 'Invalid staff ID provided.';
+        } else if (err.response.status === 401) {
+          errorMessage = 'Unauthorized. Please check your authentication credentials.';
+        } else if (err.response.status === 404) {
+          errorMessage = 'Staff member not found.';
+        } else if (err.response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+      }
+      setError(errorMessage);
+    }
+  };
+
+  const getSkillsetColor = () => {
+    return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
+  };
+
+  const formatSkillset = (skillset: string) => {
+    return skillset.split(',').map(skill => skill.trim()).join(' • ');
   };
 
   if (loading) {
     return (
       <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto text-center">
-          <p className="text-gray-600 dark:text-gray-300">Loading employees...</p>
+          <p className="text-gray-600 dark:text-gray-300">Loading staff members...</p>
         </div>
       </div>
     );
@@ -154,25 +199,25 @@ const EmployeeManagement: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Employee Management</h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-2">Manage employee accounts and permissions</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Staff Management</h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-2">Manage staff accounts and permissions</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center space-x-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg text-sm sm:text-base"
           >
             <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span>Add Employee</span>
+            <span>Add Staff</span>
           </button>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
-                placeholder="Search employees..."
+                placeholder="Search staff..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
@@ -187,17 +232,6 @@ const EmployeeManagement: React.FC = () => {
               <option value="all">All Departments</option>
               {departments.map(dept => (
                 <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
-
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            >
-              <option value="all">All Roles</option>
-              {roles.map(role => (
-                <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
               ))}
             </select>
 
@@ -218,62 +252,61 @@ const EmployeeManagement: React.FC = () => {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Employee</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Staff</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Department</th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Role</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Skillset</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Join Date</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                {filteredEmployees.map((employee) => (
-                  <tr key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                {filteredStaff.map((staff) => (
+                  <tr key={staff.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center space-x-3">
                         <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded-full">
                           <User className="h-4 w-4 text-blue-600" />
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">{employee.name}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{employee.email}</div>
-                          <div className="text-xs text-gray-400 dark:text-gray-500">ID: {employee.employeeId}</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{staff.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{staff.email}</div>
+                          <div className="text-xs text-gray-400 dark:text-gray-500">ID: {staff.id}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center space-x-2">
                         <Building className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                        <span className="text-sm text-gray-900 dark:text-white">{employee.department}</span>
+                        <span className="text-sm text-gray-900 dark:text-white">{staff.department}</span>
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(employee.role)}`}>
-                        <Shield className="h-3 w-3 mr-1" />
-                        {employee.role.charAt(0).toUpperCase() + employee.role.slice(1)}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSkillsetColor()}`}>
+                        {formatSkillset(staff.skillset)}
                       </span>
                     </td>
                     <td className="px-4 sm:px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(employee.status)}`}>
-                        {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${staff.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}>
+                        {staff.status.charAt(0).toUpperCase() + staff.status.slice(1)}
                       </span>
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center space-x-2">
                         <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                        <span className="text-sm text-gray-900 dark:text-white">{new Date(employee.joinDate).toLocaleDateString()}</span>
+                        <span className="text-sm text-gray-900 dark:text-white">{new Date(staff.joinDate).toLocaleDateString()}</span>
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => handleEditEmployee(employee)}
+                          onClick={() => handleEditStaff(staff)}
                           className="p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                         >
                           <Edit3 className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => setShowDeleteConfirm(employee.id)}
+                          onClick={() => setShowDeleteConfirm(staff.id)}
                           className="p-1.5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -286,14 +319,14 @@ const EmployeeManagement: React.FC = () => {
             </table>
           </div>
 
-          {filteredEmployees.length === 0 && (
+          {filteredStaff.length === 0 && (
             <div className="text-center py-12">
               <div className="flex justify-center mb-4">
                 <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-full">
                   <User className="h-8 w-8 text-gray-400 dark:text-gray-500" />
                 </div>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No employees found</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No staff found</h3>
               <p className="text-gray-600 dark:text-gray-300">Try adjusting your search criteria or filters</p>
             </div>
           )}
@@ -303,10 +336,10 @@ const EmployeeManagement: React.FC = () => {
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
               <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" onClick={() => setShowAddModal(false)} />
-              
+
               <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-2xl">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add New Employee</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add New Staff</h3>
                   <button
                     onClick={() => setShowAddModal(false)}
                     className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -320,8 +353,8 @@ const EmployeeManagement: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
                     <input
                       type="text"
-                      value={newEmployee.name}
-                      onChange={(e) => setNewEmployee({...newEmployee, name: e.target.value})}
+                      value={newStaff.name}
+                      onChange={(e) => setNewStaff({...newStaff, name: e.target.value})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       placeholder="Enter full name"
                     />
@@ -331,29 +364,18 @@ const EmployeeManagement: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
                     <input
                       type="email"
-                      value={newEmployee.email}
-                      onChange={(e) => setNewEmployee({...newEmployee, email: e.target.value})}
+                      value={newStaff.email}
+                      onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       placeholder="Enter email address"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Employee ID</label>
-                    <input
-                      type="text"
-                      value={newEmployee.employeeId}
-                      onChange={(e) => setNewEmployee({...newEmployee, employeeId: e.target.value})}
-                      className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder="Enter Employee ID"
-                    />
-                  </div>
-
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
                     <select
-                      value={newEmployee.department}
-                      onChange={(e) => setNewEmployee({...newEmployee, department: e.target.value})}
+                      value={newStaff.department}
+                      onChange={(e) => setNewStaff({...newStaff, department: e.target.value})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       <option value="">Select Department</option>
@@ -364,24 +386,22 @@ const EmployeeManagement: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
-                    <select
-                      value={newEmployee.role}
-                      onChange={(e) => setNewEmployee({...newEmployee, role: e.target.value as 'Employee' | 'Staff' | 'Admin'})}
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Skillset</label>
+                    <input
+                      type="text"
+                      value={newStaff.skillset}
+                      onChange={(e) => setNewStaff({...newStaff, skillset: e.target.value})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      {roles.map(role => (
-                        <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
-                      ))}
-                    </select>
+                      placeholder="Enter skills (comma-separated)"
+                    />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
                     <input
                       type="password"
-                      value={newEmployee.password}
-                      onChange={(e) => setNewEmployee({...newEmployee, password: e.target.value})}
+                      value={newStaff.password}
+                      onChange={(e) => setNewStaff({...newStaff, password: e.target.value})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       placeholder="Enter password"
                     />
@@ -396,11 +416,11 @@ const EmployeeManagement: React.FC = () => {
                     Cancel
                   </button>
                   <button
-                    onClick={handleAddEmployee}
-                    disabled={!newEmployee.name || !newEmployee.email || !newEmployee.employeeId || !newEmployee.department || !newEmployee.password}
+                    onClick={handleAddStaff}
+                    disabled={!newStaff.name || !newStaff.email || !newStaff.department || !newStaff.password}
                     className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                   >
-                    Add Employee
+                    Add Staff
                   </button>
                 </div>
               </div>
@@ -408,16 +428,16 @@ const EmployeeManagement: React.FC = () => {
           </div>
         )}
 
-        {editingEmployee && (
+        {editingStaff && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-              <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" onClick={() => setEditingEmployee(null)} />
+              <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" onClick={() => setEditingStaff(null)} />
               
               <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-2xl">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Employee</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Staff</h3>
                   <button
-                    onClick={() => setEditingEmployee(null)}
+                    onClick={() => setEditingStaff(null)}
                     className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     <X className="h-5 w-5" />
@@ -429,8 +449,8 @@ const EmployeeManagement: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
                     <input
                       type="text"
-                      value={editingEmployee.name}
-                      onChange={(e) => setEditingEmployee({...editingEmployee, name: e.target.value})}
+                      value={editingStaff.name}
+                      onChange={(e) => setEditingStaff({...editingStaff, name: e.target.value})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
@@ -439,8 +459,8 @@ const EmployeeManagement: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
                     <input
                       type="email"
-                      value={editingEmployee.email}
-                      onChange={(e) => setEditingEmployee({...editingEmployee, email: e.target.value})}
+                      value={editingStaff.email}
+                      onChange={(e) => setEditingStaff({...editingStaff, email: e.target.value})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
@@ -448,8 +468,8 @@ const EmployeeManagement: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
                     <select
-                      value={editingEmployee.department}
-                      onChange={(e) => setEditingEmployee({...editingEmployee, department: e.target.value})}
+                      value={editingStaff.department}
+                      onChange={(e) => setEditingStaff({...editingStaff, department: e.target.value})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       {departments.map(dept => (
@@ -459,23 +479,21 @@ const EmployeeManagement: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
-                    <select
-                      value={editingEmployee.role}
-                      onChange={(e) => setEditingEmployee({...editingEmployee, role: e.target.value as 'Employee' | 'Staff' | 'Admin'})}
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Skillset</label>
+                    <input
+                      type="text"
+                      value={editingStaff.skillset}
+                      onChange={(e) => setEditingStaff({...editingStaff, skillset: e.target.value})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      {roles.map(role => (
-                        <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
-                      ))}
-                    </select>
+                      placeholder="Enter skills (comma-separated)"
+                    />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
                     <select
-                      value={editingEmployee.status}
-                      onChange={(e) => setEditingEmployee({...editingEmployee, status: e.target.value as 'active' | 'inactive'})}
+                      value={editingStaff.status}
+                      onChange={(e) => setEditingStaff({...editingStaff, status: e.target.value as 'active' | 'inactive'})}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       <option value="active">Active</option>
@@ -486,7 +504,7 @@ const EmployeeManagement: React.FC = () => {
 
                 <div className="flex space-x-3 mt-6">
                   <button
-                    onClick={() => setEditingEmployee(null)}
+                    onClick={() => setEditingStaff(null)}
                     className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
                     Cancel
@@ -513,11 +531,11 @@ const EmployeeManagement: React.FC = () => {
                   <div className="bg-red-100 dark:bg-red-900/50 p-2 rounded-full">
                     <Trash2 className="h-5 w-5 text-red-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Delete Employee</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Delete Staff</h3>
                 </div>
                 
                 <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Are you sure you want to delete this employee? This action cannot be undone.
+                  Are you sure you want to delete this staff member? This action cannot be undone.
                 </p>
 
                 <div className="flex space-x-3">
@@ -528,7 +546,7 @@ const EmployeeManagement: React.FC = () => {
                     Cancel
                   </button>
                   <button
-                    onClick={() => handleDeleteEmployee(showDeleteConfirm)}
+                    onClick={() => handleDeleteStaff(showDeleteConfirm)}
                     className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                   >
                     Delete
@@ -543,4 +561,4 @@ const EmployeeManagement: React.FC = () => {
   );
 };
 
-export default EmployeeManagement;
+export default StaffManagement;

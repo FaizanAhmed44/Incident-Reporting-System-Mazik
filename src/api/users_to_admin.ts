@@ -14,10 +14,7 @@ interface UserID {
 
 // Define interface for Staff response
 export interface Staff {
-  '@odata.type': string;
-  '@odata.id': string;
-  '@odata.etag': string;
-  '@odata.editLink': string;
+  cr6dd_skillset: string;
   cr6dd_departmentname: string;
   cr6dd_availability: string;
   cr6dd_UserID: UserID;
