@@ -706,7 +706,7 @@ const IncidentConfirmation: React.FC = () => {
         ResolverName: processedData.staffName,
         Severity: processedData.priority,
         descriptionSummary: processedData.summary,
-        emailDraft: "Subject: Downtime Update\nDear Alice, we are addressing the server issue."
+        emailDraft: processedData.email
       },
      
     };

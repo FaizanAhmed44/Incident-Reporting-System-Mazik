@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, User, Tag, MessageSquare, CheckCircle, Play, FileText } from 'lucide-react';
+import { ArrowLeft, Clock, User, Tag, CheckCircle, Play, FileText } from 'lucide-react';
+import IncidentChat from '../employee/IncidentChat';
 
 const TicketDetails: React.FC = () => {
   const { ticketId } = useParams();
@@ -160,6 +161,11 @@ const TicketDetails: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Chat Section */}
+            <div>
+              <IncidentChat ticketId={'INC-201'} />
+            </div>
           </div>
 
           {/* Sidebar */}
