@@ -7,12 +7,12 @@ interface Ticket {
   title: string;
   description: string;
   departmentType: string;
-  status: 'new' | 'accepted' | 'in-progress' | 'resolved' | 'rejected';
+  status: 'New' | 'Accepted' | 'In progress' | 'Resolved' | 'Rejected';
   reportedBy: string;
   reportedOn: string;
   assignedResolver: string;
   aiSuggestedDescription: string;
-  aiSeverity: 'low' | 'medium' | 'high';
+  aiSeverity: 'Low' | 'Medium' | 'High';
   aiDraftEmail: string;
 }
 
@@ -28,22 +28,22 @@ const TicketsManagement: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
 
-  const departments = ['IT Support', 'HR', 'Finance', 'Operations', 'Facilities'];
-  const statuses = ['new', 'accepted', 'in-progress', 'resolved', 'rejected'];
-  const severities = ['low', 'medium', 'high'];
+  const departments = ['IT Support', 'HR', 'Finance', 'Operations', 'Admin'];
+  const statuses = ['New', 'Accepted', 'In progress', 'Resolved', 'Rejected'];
+  const severities = ['Low', 'Medium', 'High'];
 
   // Map backend Incident to frontend Ticket
   const mapIncidentToTicket = (incident: Incident): Ticket => ({
     id: incident.cr6dd_incidentid || incident.cr6dd_incidentsid || 'Unknown',
-    title: incident.cr6dd_descriptionsummary || 'Untitled Incident',
-    description: incident.cr6dd_descriptionsummary || '',
+    title: incident.cr6dd_title || 'Untitled Incident',
+    description: incident.cr6dd_userdescription || '',
     departmentType: incident.cr6dd_departmenttype || 'Unknown',
-    status: incident.cr6dd_status as 'new' | 'accepted' | 'in-progress' | 'resolved' | 'rejected' || 'new',
+    status: incident.cr6dd_status as 'New' | 'Accepted' | 'In progress' | 'Resolved' | 'Rejected' || 'New',
     reportedBy: incident.cr6dd_reportername || 'Unknown',
     reportedOn: incident['createdon@OData.Community.Display.V1.FormattedValue'] || incident.createdon || new Date().toISOString().split('T')[0],
     assignedResolver: incident.cr6dd_resolvername || 'Unassigned',
-    aiSuggestedDescription: incident.cr6dd_emaildraft || '',
-    aiSeverity: incident.cr6dd_severity as 'low' | 'medium' | 'high' || 'medium',
+    aiSuggestedDescription: incident.cr6dd_descriptionsummary || '',
+    aiSeverity: incident.cr6dd_severity as 'Low' | 'Medium' | 'High' || 'Medium',
     aiDraftEmail: incident.cr6dd_emaildraft || '',
   });
 
@@ -101,20 +101,20 @@ const TicketsManagement: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-      case 'accepted': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
-      case 'in-progress': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-      case 'resolved': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-      case 'rejected': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+      case 'New': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+      case 'Accepted': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
+      case 'In progress': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
+      case 'Resolved': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+      case 'Rejected': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+      case 'High': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+      case 'Medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
+      case 'Low': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
@@ -146,7 +146,7 @@ const TicketsManagement: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark: bg-gray-900">
+    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}

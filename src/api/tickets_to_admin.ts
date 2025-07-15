@@ -18,7 +18,9 @@ export interface Incident {
   cr6dd_emaildraft: string;
   cr6dd_resolvername: string;
   cr6dd_severity: string;
-  cr6dd_status: string;
+  cr6dd_status: string; 
+  cr6dd_title: string;
+  cr6dd_userdescription: string;
 }
 
 // API call function to get all tickets data
