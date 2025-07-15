@@ -13,20 +13,34 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext"; // Import the useAuth hook
 import { getUserTickets } from "../../api/incidentApi"; // Import our new API function
+import { useNavigate } from 'react-router-dom';
 
 // The interface for how our component USES a ticket.
 // This is our clean, internal format.
+// interface Ticket {
+//   id: string;
+//   title: string;
+//   category: string;
+//   status: "new" | "accepted" | "in-progress" | "resolved" | "rejected";
+//   priority: "low" | "medium" | "high";
+//   createdAt: string;
+//   updatedAt: string;
+//   assignedTeam: string;
+//   assignedAgent?: string;
+//   assignedResolverName?: string;
+// }
 interface Ticket {
   id: string;
   title: string;
+  description?: string; // Optional description
   category: string;
   status: "new" | "accepted" | "in-progress" | "resolved" | "rejected";
-  priority: "low" | "medium" | "high";
-  createdAt: string;
-  updatedAt: string;
+  severity: "low" | "medium" | "high";
+  reportedOn: string;
   assignedTeam: string;
-  assignedAgent?: string;
   assignedResolverName?: string;
+  assignedResolverEmail?: string; // Optional resolver email
+  descriptionSummary: string
 }
 
 const TrackTickets: React.FC = () => {
@@ -34,7 +48,7 @@ const TrackTickets: React.FC = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
+  const navigate = useNavigate();
   // State for UI controls
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -53,21 +67,36 @@ const TrackTickets: React.FC = () => {
 
       try {
         const response = await getUserTickets(user.id);
-
         const mappedTickets: Ticket[] = response.tickets.map((apiTicket) => ({
           id: apiTicket.incidentID,
-          title: apiTicket.title || apiTicket.description,
+          title: apiTicket.title || "Untitled Incident",
+          description: apiTicket.description,
           category: apiTicket.category,
           status: apiTicket.status
             .toLowerCase()
             .replace(" ", "-") as Ticket["status"],
-          priority: "medium",
-          createdAt: apiTicket.lastUpdated,
-          updatedAt: apiTicket.lastUpdated,
+          severity: apiTicket.severity.toLowerCase() as Ticket["severity"],
+          reportedOn: apiTicket.reportedOn,
+          //updatedAt: apiTicket.lastUpdated,
           assignedTeam: apiTicket.category,
-          assignedAgent: "Unassigned",
-          assignedResolverName: "Unassigned", // Map resolver name if available
-        }));
+          assignedResolverName: apiTicket.resolverName || "Unassigned", // Map resolver name if available
+          assignedResolverEmail: apiTicket.resolverEmail || "", // Map resolver email if available\
+          descriptionSummary: apiTicket.descriptionSummary
+}));
+        // const mappedTickets: Ticket[] = response.tickets.map((apiTicket) => ({
+        //   id: apiTicket.incidentID,
+        //   title: apiTicket.title || apiTicket.description,
+        //   category: apiTicket.category,
+        //   status: apiTicket.status
+        //     .toLowerCase()
+        //     .replace(" ", "-") as Ticket["status"],
+        //   priority: "medium",
+        //   createdAt: apiTicket.lastUpdated,
+        //   updatedAt: apiTicket.lastUpdated,
+        //   assignedTeam: apiTicket.category,
+        //   assignedAgent: "Unassigned",
+        //   assignedResolverName: "Unassigned", // Map resolver name if available
+        // }));
 
         setTickets(mappedTickets);
       } catch (err: any) {
@@ -209,7 +238,7 @@ const TrackTickets: React.FC = () => {
         <div className="text-center">
           <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto" />
           <h2 className="mt-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
-            Loading Your Tickets...
+            Loading Your Details...
           </h2>
         </div>
       </div>
@@ -309,11 +338,11 @@ const TrackTickets: React.FC = () => {
                           <div className="flex flex-wrap items-center gap-2">
                             <span
                               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getPriorityColor(
-                                ticket.priority
+                                ticket.severity
                               )}`}
                             >
                               {" "}
-                              {ticket.priority.toUpperCase()}{" "}
+                              {ticket.severity.toUpperCase()}{" "}
                             </span>
                             <span
                               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(
@@ -329,12 +358,14 @@ const TrackTickets: React.FC = () => {
                             </span>
                           </div>
                         </div>
-                      </div>
-                      <button className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg text-sm sm:text-base">
-                        {" "}
-                        <Eye className="h-3 w-3 sm:h-4 sm:w-4" />{" "}
-                        <span>View Details</span>{" "}
-                      </button>
+                      </div>                      
+                      <button 
+                      onClick={() => navigate(`/employee/ticket/INC-2024-001`, { state: { ticket } }) }
+                      className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg text-sm sm:text-base"
+                    >
+                      <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span>View Details</span>
+                    </button>
                     </div>
                     <ProgressIndicator status={ticket.status} />
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
@@ -382,7 +413,7 @@ const TrackTickets: React.FC = () => {
                             Assigned Member
                           </p>{" "}
                           <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                            {ticket.assignedAgent || "Unassigned"}
+                            {ticket.assignedResolverName || "Unassigned"}
                           </p>{" "}
                         </div>{" "}
                       </div>
@@ -398,7 +429,7 @@ const TrackTickets: React.FC = () => {
                             Last Updated
                           </p>{" "}
                           <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                            {new Date(ticket.updatedAt).toLocaleDateString()}
+                            {new Date(ticket.reportedOn).toLocaleDateString()}
                           </p>{" "}
                         </div>{" "}
                       </div>

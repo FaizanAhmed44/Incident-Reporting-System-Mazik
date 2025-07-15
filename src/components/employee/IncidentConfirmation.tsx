@@ -698,7 +698,7 @@ const IncidentConfirmation: React.FC = () => {
         Description: processedData.description,
         Status: "New",
         DepartmentType: processedData.department,
-        AssignedResolverGUID: "848cea09-9c37-4f3f-96fc-9f0e892a4143",
+        AssignedResolverGUID: "9a451891-e322-411b-9fb1-f93264bc29bb",
         ReportedByGUID: processedData.reportedById,
         ResolverEmail: processedData.staffEmail,
         ReporterEmail: processedData.reportedByEmail,
@@ -706,6 +706,7 @@ const IncidentConfirmation: React.FC = () => {
         ResolverName: processedData.staffName,
         Severity: processedData.priority,
         descriptionSummary: processedData.summary,
+        // emailDraft: "Subject: Downtime Update\nDear Alice, we are addressing the server issue."
         emailDraft: processedData.email
       },
      

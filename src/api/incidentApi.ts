@@ -109,7 +109,7 @@ export const confirmIncident = async (payload: IncidentConfirmationPayloads): Pr
 
 export const regenerateIncident = async (payload: RegenerateIncidentPayload): Promise<RegenerateIncidentResponse> => {
   try {
-    const apiUrl = 'https://aitraigeandincidentreporting-c8grgvezh7c2fzgq.eastus-01.azurewebsites.net/api/v1/incidents/regenerate';
+    const apiUrl = 'https://aitraigeandincidentreportingsystem-gygchch9hdege8hz.southindia-01.azurewebsites.net/api/v1/incidents/regenerate';
     console.log('Regenerating incident at:', apiUrl);
     const response = await apiClient.post<RegenerateIncidentResponse>(apiUrl, payload);
     console.log('Regenerate incident response:', response.data);
@@ -126,9 +126,13 @@ interface TicketFromApi {
   title: string | null; // Title can be null
   description: string;
   status: string; // e.g., "New", "In Progress"
-  assignedMember: string; // This is a GUID
+  severity: string; // e.g., "Low", "Medium", "High"
+  assignedResolver: string; // This is a GUID
+  resolverName: string; // Name of the resolver
+  resolverEmail: string; // Email of the resolver
   category: string;
-  lastUpdated: string; // ISO date string
+  reportedOn: string; // ISO date string
+  descriptionSummary: string;
 }
 
 // 2. Define the interface for the overall API response.

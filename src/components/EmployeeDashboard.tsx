@@ -1,18 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from "react";
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Plus, FileText, LogOut, User, Home, Menu, X, Moon, Sun } from 'lucide-react';
+import { Plus, FileText, LogOut, User, Home, Menu, X, Moon, Sun,XCircle,Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SubmitIncident from './employee/SubmitIncident';
 import TrackTickets from './employee/TrackTickets';
+import TicketDetails from './employee/TicketDetail';
 import TicketConfirmation from './employee/TicketConfirmation';
+import { getUserTickets } from "../api/incidentApi"; 
 import IncidentConfirmation from './employee/IncidentConfirmation';
+
+interface Ticket {
+  id: string;
+  title: string;
+  description?: string; // Optional description
+  category: string;
+  status: "new" | "accepted" | "in-progress" | "resolved" | "rejected";
+  severity: "low" | "medium" | "high";
+  reportedOn: string;
+  assignedTeam: string;
+  assignedResolverName?: string;
+  assignedResolverEmail?: string; // Optional resolver email
+}
+
 
 const EmployeeDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  
+  
 
   const navigation = [
     { name: 'Dashboard', href: '/employee', icon: Home },
@@ -26,6 +44,8 @@ const EmployeeDashboard: React.FC = () => {
     }
     return location.pathname.startsWith(path);
   };
+
+
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
@@ -125,7 +145,9 @@ const EmployeeDashboard: React.FC = () => {
           <Route path="/submit" element={<SubmitIncident />} />
           <Route path="/incident-confirmation" element={<IncidentConfirmation />} />
           <Route path="/track" element={<TrackTickets />} />
+          <Route path="/ticket/:ticketId" element={<TicketDetails />} />
           <Route path="/confirmation/:ticketId" element={<TicketConfirmation />} />
+          
         </Routes>
       </div>
     </div>
@@ -134,6 +156,109 @@ const EmployeeDashboard: React.FC = () => {
 
 const EmployeeHome: React.FC = () => {
   const { user } = useAuth();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  
+  // --- DATA FETCHING with useEffect ---
+  useEffect(() => {
+    const fetchTickets = async () => {
+      if (!user) {
+        setError("You must be logged in to view your tickets.");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await getUserTickets(user.id);
+        const mappedTickets: Ticket[] = response.tickets.map((apiTicket) => ({
+          id: apiTicket.incidentID,
+          title: apiTicket.title || "Untitled Incident",
+          description: apiTicket.description,
+          category: apiTicket.category,
+          status: apiTicket.status
+            .toLowerCase()
+            .replace(" ", "-") as Ticket["status"],
+          severity: apiTicket.severity.toLowerCase() as Ticket["severity"],
+          reportedOn: apiTicket.reportedOn,
+          //updatedAt: apiTicket.lastUpdated,
+          assignedTeam: apiTicket.category,
+          assignedResolverName: apiTicket.resolverName || "Unassigned", // Map resolver name if available
+          assignedResolverEmail: apiTicket.resolverEmail || "", // Map resolver email if available
+}));
+        // const mappedTickets: Ticket[] = response.tickets.map((apiTicket) => ({
+        //   id: apiTicket.incidentID,
+        //   title: apiTicket.title || apiTicket.description,
+        //   category: apiTicket.category,
+        //   status: apiTicket.status
+        //     .toLowerCase()
+        //     .replace(" ", "-") as Ticket["status"],
+        //   priority: "medium",
+        //   createdAt: apiTicket.lastUpdated,
+        //   updatedAt: apiTicket.lastUpdated,
+        //   assignedTeam: apiTicket.category,
+        //   assignedAgent: "Unassigned",
+        //   assignedResolverName: "Unassigned", 
+        // }));
+
+        setTickets(mappedTickets);
+      } catch (err: any) {
+        setError(
+          err.message || "An unknown error occurred while fetching tickets."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTickets();
+  }, [user]); // This effect runs once when the component loads, or if the user logs in/out.
+
+  const formatStatus = (status: Ticket["status"]) => {
+    return status.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+  
+  const getBadgeStyle = (status: Ticket["status"]) => {
+    switch (status) {
+      case 'resolved':
+        return 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300';
+      case 'in-progress':
+        return 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300';
+      case 'rejected':
+        return 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300';
+      default:
+        return 'bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-gray-300';
+    }
+  };
+  
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto" />
+          <h2 className="mt-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
+            Loading Your Tickets...
+          </h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center bg-red-50 dark:bg-red-900/20 p-8 rounded-lg">
+          <XCircle className="h-12 w-12 text-red-500 mx-auto" />
+          <h2 className="mt-4 text-xl font-semibold text-red-700 dark:text-red-300">
+            An Error Occurred
+          </h2>
+          <p className="text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
@@ -174,7 +299,28 @@ const EmployeeHome: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0 space-y-2 sm:space-y-0">
+          {tickets.slice(0, 3).map((ticket) => (
+              <div 
+                key={ticket.id} 
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0 space-y-2 sm:space-y-0"
+              >
+                <div className="flex-1">
+                  <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
+                    {ticket.title}
+                  </p>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                    Ticket #{ticket.id} • {formatStatus(ticket.status)}
+                  </p>
+                </div>
+
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                  ${getBadgeStyle(ticket.status)} self-start sm:self-center`}>
+                  {formatStatus(ticket.status)}
+                </span>
+              </div>
+            ))}
+
+            {/* <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0 space-y-2 sm:space-y-0">
               <div className="flex-1">
                 <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">Laptop performance issue</p>
                 <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Ticket #INC-2024-001 • In Progress</p>
@@ -191,7 +337,7 @@ const EmployeeHome: React.FC = () => {
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 self-start sm:self-center">
                 Resolved
               </span>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
