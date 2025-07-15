@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Search, Filter, Edit3, Trash2, Eye, EyeOff, X, FileText, User, Calendar, AlertCircle, Zap, Mail, Building } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Edit3, Trash2, Eye, EyeOff, X, FileText, User, Calendar, AlertCircle, Zap, Mail, Building } from 'lucide-react';
+import { get_tickets, Incident } from '../../api/tickets_to_admin';
 
 interface Ticket {
   id: string;
@@ -13,74 +14,12 @@ interface Ticket {
   aiSuggestedDescription: string;
   aiSeverity: 'low' | 'medium' | 'high';
   aiDraftEmail: string;
-  priority: 'low' | 'medium' | 'high';
-  category: string;
 }
 
 const TicketsManagement: React.FC = () => {
-  const [tickets, setTickets] = useState<Ticket[]>([
-    {
-      id: 'INC-2024-001',
-      title: 'Email server downtime affecting productivity',
-      description: 'Unable to send or receive emails since morning. Getting connection timeout errors when trying to connect to the mail server.',
-      departmentType: 'IT Support',
-      status: 'in-progress',
-      reportedBy: 'John Doe',
-      reportedOn: '2024-01-18',
-      assignedResolver: 'Sarah Johnson',
-      aiSuggestedDescription: 'Critical email infrastructure issue affecting multiple users. Requires immediate server diagnostics and potential failover to backup systems.',
-      aiSeverity: 'high',
-      aiDraftEmail: 'Dear John, We have received your email server issue report and our IT team is actively working on resolving this critical infrastructure problem. We expect to have service restored within 2-3 hours. We apologize for any inconvenience caused.',
-      priority: 'high',
-      category: 'Infrastructure'
-    },
-    {
-      id: 'INC-2024-002',
-      title: 'Software installation request for Adobe Creative Suite',
-      description: 'Need Adobe Creative Suite installed on my workstation for new marketing project. Current software is outdated.',
-      departmentType: 'IT Support',
-      status: 'accepted',
-      reportedBy: 'Jane Smith',
-      reportedOn: '2024-01-17',
-      assignedResolver: 'Mike Chen',
-      aiSuggestedDescription: 'Standard software installation request. Verify license availability and schedule installation during business hours.',
-      aiSeverity: 'medium',
-      aiDraftEmail: 'Dear Jane, Your Adobe Creative Suite installation request has been approved. Our IT team will schedule the installation within the next 24-48 hours. Please ensure your workstation is available during business hours.',
-      priority: 'medium',
-      category: 'Software'
-    },
-    {
-      id: 'INC-2024-003',
-      title: 'Office temperature too cold in conference room',
-      description: 'Conference room B-301 is extremely cold, making it uncomfortable for meetings. Temperature seems much lower than other areas.',
-      departmentType: 'Facilities',
-      status: 'resolved',
-      reportedBy: 'Alex Rivera',
-      reportedOn: '2024-01-15',
-      assignedResolver: 'Tom Wilson',
-      aiSuggestedDescription: 'HVAC system adjustment required for conference room B-301. Check thermostat settings and air circulation.',
-      aiSeverity: 'low',
-      aiDraftEmail: 'Dear Alex, The temperature issue in conference room B-301 has been resolved. Our facilities team has adjusted the HVAC system and the room should now maintain a comfortable temperature.',
-      priority: 'low',
-      category: 'Environment'
-    },
-    {
-      id: 'INC-2024-004',
-      title: 'Password reset request for network access',
-      description: 'Forgot my network password and cannot access shared drives or company resources. Need immediate assistance.',
-      departmentType: 'IT Support',
-      status: 'new',
-      reportedBy: 'Emily Davis',
-      reportedOn: '2024-01-18',
-      assignedResolver: 'Alex Rivera',
-      aiSuggestedDescription: 'Routine password reset request. Follow standard security protocols for identity verification before resetting credentials.',
-      aiSeverity: 'medium',
-      aiDraftEmail: 'Dear Emily, We have received your password reset request. For security purposes, please contact our IT helpdesk with your employee ID for identity verification. We will reset your password promptly after verification.',
-      priority: 'high',
-      category: 'Security'
-    }
-  ]);
-
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
@@ -89,9 +28,41 @@ const TicketsManagement: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
 
-  const departments = ['IT Support', 'HR', 'Facilities', 'Finance', 'Marketing'];
+  const departments = ['IT Support', 'HR', 'Finance', 'Operations', 'Facilities'];
   const statuses = ['new', 'accepted', 'in-progress', 'resolved', 'rejected'];
   const severities = ['low', 'medium', 'high'];
+
+  // Map backend Incident to frontend Ticket
+  const mapIncidentToTicket = (incident: Incident): Ticket => ({
+    id: incident.cr6dd_incidentid || incident.cr6dd_incidentsid || 'Unknown',
+    title: incident.cr6dd_descriptionsummary || 'Untitled Incident',
+    description: incident.cr6dd_descriptionsummary || '',
+    departmentType: incident.cr6dd_departmenttype || 'Unknown',
+    status: incident.cr6dd_status as 'new' | 'accepted' | 'in-progress' | 'resolved' | 'rejected' || 'new',
+    reportedBy: incident.cr6dd_reportername || 'Unknown',
+    reportedOn: incident['createdon@OData.Community.Display.V1.FormattedValue'] || incident.createdon || new Date().toISOString().split('T')[0],
+    assignedResolver: incident.cr6dd_resolvername || 'Unassigned',
+    aiSuggestedDescription: incident.cr6dd_emaildraft || '',
+    aiSeverity: incident.cr6dd_severity as 'low' | 'medium' | 'high' || 'medium',
+    aiDraftEmail: incident.cr6dd_emaildraft || '',
+  });
+
+  // Fetch tickets on component mount
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        setLoading(true);
+        const incidents = await get_tickets();
+        const mappedTickets = incidents.map(mapIncidentToTicket);
+        setTickets(mappedTickets);
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to load tickets. Please try again later.');
+        setLoading(false);
+      }
+    };
+    fetchTickets();
+  }, []);
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -152,25 +123,51 @@ const TicketsManagement: React.FC = () => {
     setExpandedTicket(expandedTicket === ticketId ? null : ticketId);
   };
 
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading tickets...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-600 mx-auto" />
+          <p className="mt-4 text-lg text-gray-900 dark:text-white">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
+    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark: bg-gray-900">
       <div className="max-w-7xl mx-auto">
+        
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Tickets Management</h1>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-2">Monitor and manage all incident tickets</p>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Total: {filteredTickets.length} tickets
-            </span>
+          <div className="flex items-center justify-end mt-4 sm:mt-0">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 px-4 py-2.5 flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                Total Tickets: {filteredTickets.length}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
               <input
@@ -181,6 +178,17 @@ const TicketsManagement: React.FC = () => {
                 className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
+
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+              className="px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              <option value="all">All Departments</option>
+              {departments.map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
             
             <select
               value={statusFilter}
@@ -194,17 +202,6 @@ const TicketsManagement: React.FC = () => {
             </select>
 
             <select
-              value={departmentFilter}
-              onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            >
-              <option value="all">All Departments</option>
-              {departments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
-
-            <select
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value)}
               className="px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -214,11 +211,6 @@ const TicketsManagement: React.FC = () => {
                 <option key={severity} value={severity}>{severity.charAt(0).toUpperCase() + severity.slice(1)}</option>
               ))}
             </select>
-
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-300">Filters</span>
-            </div>
           </div>
         </div>
 
@@ -267,9 +259,6 @@ const TicketsManagement: React.FC = () => {
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
                             {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1).replace('-', ' ')}
                           </span>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Category: {ticket.category}
-                          </div>
                         </div>
                       </td>
 
