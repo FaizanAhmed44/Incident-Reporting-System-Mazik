@@ -18,13 +18,14 @@ export const loginUser = async (credentials: LoginCredentials): Promise<LoginRes
     if (!apiUrl) {
       throw new Error('Login API URL is not defined in environment variables');
     }
-    console.log('Using API URL:', apiUrl); // Debugging log
-    const response = await apiClient.post<LoginResponse>(apiUrl,
-      credentials
-    );
-    return response.data;
+    const response = await apiClient.post<{ details: LoginResponse[] }>(apiUrl, credentials);
+    const userData = response.data.details[0]; // Take the first item from the details array
+    if (!userData || userData.status !== 'success') {
+      throw new Error('Login failed: Invalid response status');
+    }
+    return userData;
   } catch (error) {
-    console.error('Login API error:', error); // Debugging log
+    console.error('Login API error:', error);
     throw new Error('Login failed: Invalid credentials or server error');
   }
 };
