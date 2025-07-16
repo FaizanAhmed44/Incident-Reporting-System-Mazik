@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Edit3, Trash2, Eye, EyeOff, X, FileText, User, Calendar, AlertCircle, Zap, Mail, Building } from 'lucide-react';
 import { get_tickets, Incident } from '../../api/tickets_to_admin';
+import { deleteTicket } from '../../api/delete_ticket';
 
 interface Ticket {
   id: string;
@@ -88,9 +89,42 @@ const TicketsManagement: React.FC = () => {
     }
   };
 
-  const handleDeleteTicket = (id: string) => {
-    setTickets(tickets.filter(ticket => ticket.id !== id));
-    setShowDeleteConfirm(null);
+  const handleDeleteTicket = async (id: string) => { // CHANGE 2: Updated handleDeleteTicket to use API
+    try {
+      // Send DELETE request to the API
+      const deleteData = { id };
+      const response = await deleteTicket(deleteData);
+      console.log('Ticket deleted successfully:', response); // Log success for debugging
+
+      // Update local state
+      setTickets(tickets.filter(ticket => ticket.id !== id));
+      setShowDeleteConfirm(null);
+      setError(null); // Clear any previous errors
+    } catch (err: any) {
+      // Improved error handling with detailed logging
+      console.error('Error in handleDeleteTicket:', {
+        message: err.message,
+        response: err.response ? {
+          status: err.response.status,
+          data: err.response.data,
+        } : 'No response data',
+      });
+
+      // Provide specific error message based on response
+      let errorMessage = 'Failed to delete ticket. Please try again.';
+      if (err.response) {
+        if (err.response.status === 400) {
+          errorMessage = 'Invalid ticket ID provided.';
+        } else if (err.response.status === 401) {
+          errorMessage = 'Unauthorized. Please check your authentication credentials.';
+        } else if (err.response.status === 404) {
+          errorMessage = 'Ticket not found.';
+        } else if (err.response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+      }
+      setError(errorMessage);
+    }
   };
 
   const handleInputChange = (field: keyof Ticket, value: string) => {
