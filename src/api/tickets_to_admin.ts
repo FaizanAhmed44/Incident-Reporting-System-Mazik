@@ -17,6 +17,7 @@ export interface Incident {
   cr6dd_departmenttype: string;
   cr6dd_emaildraft: string;
   cr6dd_resolvername: string;
+  cr6dd_resolveremail: string;
   cr6dd_severity: string;
   cr6dd_status: string; 
   cr6dd_title: string;

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Search, Edit3, Trash2, Eye, EyeOff, X, FileText, User, Calendar, AlertCircle, Zap, Mail, Building } from 'lucide-react';
 import { get_tickets, Incident } from '../../api/tickets_to_admin';
 import { deleteTicket } from '../../api/delete_ticket';
+import { getStaffList, Staff } from '../../api/active_staff';
+import { updateIncident, UpdateIncidentRequest } from '../../api/edit_ticket';
 
 interface Ticket {
   id: string;
@@ -12,6 +14,7 @@ interface Ticket {
   reportedBy: string;
   reportedOn: string;
   assignedResolver: string;
+  resolverEmail: string;
   aiSuggestedDescription: string;
   aiSeverity: 'Low' | 'Medium' | 'High';
   aiDraftEmail: string;
@@ -19,6 +22,7 @@ interface Ticket {
 
 const TicketsManagement: React.FC = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,36 +37,48 @@ const TicketsManagement: React.FC = () => {
   const statuses = ['New', 'Accepted', 'In progress', 'Resolved', 'Rejected'];
   const severities = ['Low', 'Medium', 'High'];
 
-  // Map backend Incident to frontend Ticket
   const mapIncidentToTicket = (incident: Incident): Ticket => ({
     id: incident.cr6dd_incidentid || incident.cr6dd_incidentsid || 'Unknown',
     title: incident.cr6dd_title || 'Untitled Incident',
     description: incident.cr6dd_userdescription || '',
     departmentType: incident.cr6dd_departmenttype || 'Unknown',
-    status: incident.cr6dd_status as 'New' | 'Accepted' | 'In progress' | 'Resolved' | 'Rejected' || 'New',
+    status: (incident.cr6dd_status as 'New' | 'Accepted' | 'In progress' | 'Resolved' | 'Rejected') || 'New',
     reportedBy: incident.cr6dd_reportername || 'Unknown',
     reportedOn: incident['createdon@OData.Community.Display.V1.FormattedValue'] || incident.createdon || new Date().toISOString().split('T')[0],
     assignedResolver: incident.cr6dd_resolvername || 'Unassigned',
+    resolverEmail: incident.cr6dd_resolveremail || '',
     aiSuggestedDescription: incident.cr6dd_descriptionsummary || '',
-    aiSeverity: incident.cr6dd_severity as 'Low' | 'Medium' | 'High' || 'Medium',
+    aiSeverity: (incident.cr6dd_severity as 'Low' | 'Medium' | 'High') || 'Medium',
     aiDraftEmail: incident.cr6dd_emaildraft || '',
   });
 
-  // Fetch tickets on component mount
   useEffect(() => {
-    const fetchTickets = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         const incidents = await get_tickets();
+        console.log('Fetched tickets:', incidents);
         const mappedTickets = incidents.map(mapIncidentToTicket);
         setTickets(mappedTickets);
+
+        try {
+          const staffResponse = await getStaffList();
+          console.log('Fetched staff:', staffResponse);
+          setStaffList(staffResponse || []);
+        } catch (staffError) {
+          console.error('Failed to fetch staff list:', staffError);
+          setStaffList([]);
+          setError(prev => prev ? `${prev} Failed to load staff list.` : 'Failed to load staff list.');
+        }
+
         setLoading(false);
       } catch (err) {
-        setError('Failed to load tickets. Please try again later.');
+        console.error('Error fetching data:', err);
+        setError('Failed to load tickets or staff data. Please try again later.');
         setLoading(false);
       }
     };
-    fetchTickets();
+    fetchData();
   }, []);
 
   const filteredTickets = tickets.filter(ticket => {
@@ -72,56 +88,63 @@ const TicketsManagement: React.FC = () => {
     const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
     const matchesDepartment = departmentFilter === 'all' || ticket.departmentType === departmentFilter;
     const matchesSeverity = severityFilter === 'all' || ticket.aiSeverity === severityFilter;
-    
     return matchesSearch && matchesStatus && matchesDepartment && matchesSeverity;
   });
 
   const handleEditTicket = (ticket: Ticket) => {
-    setEditingTicket({ ...ticket });
+    setEditingTicket({ ...ticket, title: ticket.title || '', description: ticket.description || '', aiDraftEmail: ticket.aiDraftEmail || '', aiSuggestedDescription: ticket.aiSuggestedDescription || '', resolverEmail: ticket.resolverEmail || '' });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingTicket) {
-      setTickets(tickets.map(ticket => 
-        ticket.id === editingTicket.id ? editingTicket : ticket
-      ));
-      setEditingTicket(null);
+      try {
+        const updateData: UpdateIncidentRequest = {
+          incidentId: editingTicket.id,
+          title: editingTicket.title,
+          status: editingTicket.status,
+          department: editingTicket.departmentType,
+          resolver_name: editingTicket.assignedResolver,
+          resolver_email: editingTicket.resolverEmail,
+          userDescription: editingTicket.description,
+          suggestedDescription: editingTicket.aiSuggestedDescription,
+          severity: editingTicket.aiSeverity,
+          draftEmail: editingTicket.aiDraftEmail,
+        };
+        const response = await updateIncident(updateData);
+        console.log('Incident updated successfully:', response);
+        setTickets(tickets.map(ticket => ticket.id === editingTicket.id ? editingTicket : ticket));
+        setEditingTicket(null);
+        setError(null);
+      } catch (err: any) {
+        console.error('Error updating incident:', err);
+        let errorMessage = 'Failed to update ticket. Please try again.';
+        if (err.response) {
+          if (err.response.status === 400) errorMessage = 'Invalid ticket data provided.';
+          else if (err.response.status === 401) errorMessage = 'Unauthorized. Please check your authentication credentials.';
+          else if (err.response.status === 404) errorMessage = 'Ticket not found.';
+          else if (err.response.status >= 500) errorMessage = 'Server error. Please try again later.';
+        }
+        setError(errorMessage);
+      }
     }
   };
 
-  const handleDeleteTicket = async (id: string) => { // CHANGE 2: Updated handleDeleteTicket to use API
+  const handleDeleteTicket = async (id: string) => {
     try {
-      // Send DELETE request to the API
       const deleteData = { id };
       const response = await deleteTicket(deleteData);
-      console.log('Ticket deleted successfully:', response); // Log success for debugging
-
-      // Update local state
+      console.log('Ticket deleted successfully:', response);
       setTickets(tickets.filter(ticket => ticket.id !== id));
       setShowDeleteConfirm(null);
-      setError(null); // Clear any previous errors
+      setError(null);
     } catch (err: any) {
-      // Improved error handling with detailed logging
-      console.error('Error in handleDeleteTicket:', {
-        message: err.message,
-        response: err.response ? {
-          status: err.response.status,
-          data: err.response.data,
-        } : 'No response data',
-      });
-
-      // Provide specific error message based on response
+      console.error('Error in handleDeleteTicket:', { message: err.message, response: err.response });
       let errorMessage = 'Failed to delete ticket. Please try again.';
       if (err.response) {
-        if (err.response.status === 400) {
-          errorMessage = 'Invalid ticket ID provided.';
-        } else if (err.response.status === 401) {
-          errorMessage = 'Unauthorized. Please check your authentication credentials.';
-        } else if (err.response.status === 404) {
-          errorMessage = 'Ticket not found.';
-        } else if (err.response.status >= 500) {
-          errorMessage = 'Server error. Please try again later.';
-        }
+        if (err.response.status === 400) errorMessage = 'Invalid ticket ID provided.';
+        else if (err.response.status === 401) errorMessage = 'Unauthorized. Please check your authentication credentials.';
+        else if (err.response.status === 404) errorMessage = 'Ticket not found.';
+        else if (err.response.status >= 500) errorMessage = 'Server error. Please try again later.';
       }
       setError(errorMessage);
     }
@@ -129,7 +152,17 @@ const TicketsManagement: React.FC = () => {
 
   const handleInputChange = (field: keyof Ticket, value: string) => {
     if (editingTicket) {
-      setEditingTicket({ ...editingTicket, [field]: value });
+      if (field === 'assignedResolver') {
+        const selectedStaff = staffList.find(staff => staff.cr6dd_UserID.cr6dd_name === value);
+        setEditingTicket({
+          ...editingTicket,
+          [field]: value,
+          departmentType: selectedStaff?.cr6dd_departmentname || editingTicket.departmentType,
+          resolverEmail: selectedStaff?.cr6dd_UserID.cr6dd_email || editingTicket.resolverEmail
+        });
+      } else {
+        setEditingTicket({ ...editingTicket, [field]: value });
+      }
     }
   };
 
@@ -182,8 +215,6 @@ const TicketsManagement: React.FC = () => {
   return (
     <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto">
-        
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Tickets Management</h1>
@@ -192,14 +223,11 @@ const TicketsManagement: React.FC = () => {
           <div className="flex items-center justify-end mt-4 sm:mt-0">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 px-4 py-2.5 flex items-center space-x-2">
               <FileText className="h-5 w-5 text-blue-600" />
-              <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                Total Tickets: {filteredTickets.length}
-              </span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">Total Tickets: {filteredTickets.length}</span>
             </div>
           </div>
         </div>
 
-        {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             <div className="relative">
@@ -212,43 +240,33 @@ const TicketsManagement: React.FC = () => {
                 className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
-
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
               className="px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="all">All Departments</option>
-              {departments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
+              {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
             </select>
-            
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="all">All Status</option>
-              {statuses.map(status => (
-                <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}</option>
-              ))}
+              {statuses.map(status => <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}</option>)}
             </select>
-
             <select
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value)}
               className="px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="all">All Severities</option>
-              {severities.map(severity => (
-                <option key={severity} value={severity}>{severity.charAt(0).toUpperCase() + severity.slice(1)}</option>
-              ))}
+              {severities.map(severity => <option key={severity} value={severity}>{severity.charAt(0).toUpperCase() + severity.slice(1)}</option>)}
             </select>
           </div>
         </div>
 
-        {/* Tickets Table */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -265,7 +283,6 @@ const TicketsManagement: React.FC = () => {
                 {filteredTickets.map((ticket) => (
                   <React.Fragment key={ticket.id}>
                     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                      {/* Incident Details */}
                       <td className="px-4 sm:px-6 py-4">
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2">
@@ -273,17 +290,13 @@ const TicketsManagement: React.FC = () => {
                             <span className="text-xs font-mono text-gray-500 dark:text-gray-400">{ticket.id}</span>
                           </div>
                           <div className="font-medium text-gray-900 dark:text-white text-sm">{ticket.title}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                            {ticket.description}
-                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 max-w-xs truncate">{ticket.description}</div>
                           <div className="flex items-center space-x-2">
                             <Calendar className="h-3 w-3 text-gray-400 dark:text-gray-500" />
                             <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(ticket.reportedOn).toLocaleDateString()}</span>
                           </div>
                         </div>
                       </td>
-
-                      {/* Department & Status */}
                       <td className="px-4 sm:px-6 py-4">
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2">
@@ -295,8 +308,6 @@ const TicketsManagement: React.FC = () => {
                           </span>
                         </div>
                       </td>
-
-                      {/* Reporter & Resolver */}
                       <td className="px-4 sm:px-6 py-4">
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2">
@@ -315,8 +326,6 @@ const TicketsManagement: React.FC = () => {
                           </div>
                         </div>
                       </td>
-
-                      {/* AI Analysis */}
                       <td className="px-4 sm:px-6 py-4">
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2">
@@ -325,9 +334,7 @@ const TicketsManagement: React.FC = () => {
                               {ticket.aiSeverity.toUpperCase()}
                             </span>
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-300 max-w-xs truncate">
-                            {ticket.aiSuggestedDescription}
-                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300 max-w-xs truncate">{ticket.aiSuggestedDescription}</div>
                           <button
                             onClick={() => toggleExpanded(ticket.id)}
                             className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center space-x-1"
@@ -337,8 +344,6 @@ const TicketsManagement: React.FC = () => {
                           </button>
                         </div>
                       </td>
-
-                      {/* Actions */}
                       <td className="px-4 sm:px-6 py-4">
                         <div className="flex items-center space-x-2">
                           <button
@@ -356,21 +361,16 @@ const TicketsManagement: React.FC = () => {
                         </div>
                       </td>
                     </tr>
-
-                    {/* Expanded Details Row */}
                     {expandedTicket === ticket.id && (
                       <tr className="bg-blue-50 dark:bg-blue-900/20">
                         <td colSpan={5} className="px-4 sm:px-6 py-4">
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Full Description */}
                             <div>
                               <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Full Description</h4>
                               <p className="text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
                                 {ticket.description}
                               </p>
                             </div>
-
-                            {/* AI Draft Email */}
                             <div>
                               <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
                                 <Mail className="h-4 w-4 text-blue-600" />
@@ -380,8 +380,6 @@ const TicketsManagement: React.FC = () => {
                                 {ticket.aiDraftEmail}
                               </p>
                             </div>
-
-                            {/* AI Suggested Description */}
                             <div className="lg:col-span-2">
                               <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
                                 <AlertCircle className="h-4 w-4 text-purple-600" />
@@ -400,7 +398,6 @@ const TicketsManagement: React.FC = () => {
               </tbody>
             </table>
           </div>
-
           {filteredTickets.length === 0 && (
             <div className="text-center py-12">
               <div className="flex justify-center mb-4">
@@ -414,12 +411,10 @@ const TicketsManagement: React.FC = () => {
           )}
         </div>
 
-        {/* Edit Ticket Modal */}
         {editingTicket && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
               <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" onClick={() => setEditingTicket(null)} />
-              
               <div className="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-2xl">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Ticket</h3>
@@ -430,75 +425,88 @@ const TicketsManagement: React.FC = () => {
                     <X className="h-5 w-5" />
                   </button>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
                     <input
                       type="text"
-                      value={editingTicket.title}
+                      value={editingTicket.title || ''}
                       onChange={(e) => handleInputChange('title', e.target.value)}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
-
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
+                    <input
+                      type="text"
+                      value={editingTicket.departmentType || 'Unknown'}
+                      disabled
+                      className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Severity</label>
+                    <select
+                      value={editingTicket.aiSeverity || 'Medium'}
+                      onChange={(e) => handleInputChange('aiSeverity', e.target.value)}
+                      className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      {severities.map(severity => <option key={severity} value={severity}>{severity.charAt(0).toUpperCase() + severity.slice(1)}</option>)}
+                    </select>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
                     <select
-                      value={editingTicket.status}
+                      value={editingTicket.status || 'New'}
                       onChange={(e) => handleInputChange('status', e.target.value)}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
-                      {statuses.map(status => (
-                        <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}</option>
-                      ))}
+                      {statuses.map(status => <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}</option>)}
                     </select>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
-                    <select
-                      value={editingTicket.departmentType}
-                      onChange={(e) => handleInputChange('departmentType', e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      {departments.map(dept => (
-                        <option key={dept} value={dept}>{dept}</option>
-                      ))}
-                    </select>
-                  </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assigned Resolver</label>
-                    <input
-                      type="text"
-                      value={editingTicket.assignedResolver}
+                    <select
+                      value={editingTicket.assignedResolver || 'Unassigned'}
                       onChange={(e) => handleInputChange('assignedResolver', e.target.value)}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
+                    >
+                      <option value="Unassigned">Unassigned</option>
+                      {staffList.map(staff => (
+                        <option key={staff.cr6dd_UserID.cr6dd_usersid} value={staff.cr6dd_UserID.cr6dd_name}>
+                          {staff.cr6dd_UserID.cr6dd_name} ({staff.cr6dd_departmentname})
+                        </option>
+                      ))}
+                    </select>
                   </div>
-
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
                     <textarea
-                      value={editingTicket.description}
+                      value={editingTicket.description || ''}
                       onChange={(e) => handleInputChange('description', e.target.value)}
                       rows={3}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
-
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">AI Suggested Description</label>
                     <textarea
-                      value={editingTicket.aiSuggestedDescription}
+                      value={editingTicket.aiSuggestedDescription || ''}
                       onChange={(e) => handleInputChange('aiSuggestedDescription', e.target.value)}
                       rows={2}
                       className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">AI Draft Email</label>
+                    <textarea
+                      value={editingTicket.aiDraftEmail || ''}
+                      onChange={(e) => handleInputChange('aiDraftEmail', e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
                 </div>
-
                 <div className="flex space-x-3 mt-6">
                   <button
                     onClick={() => setEditingTicket(null)}
@@ -518,12 +526,10 @@ const TicketsManagement: React.FC = () => {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
               <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" onClick={() => setShowDeleteConfirm(null)} />
-              
               <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-2xl">
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="bg-red-100 dark:bg-red-900/50 p-2 rounded-full">
@@ -531,11 +537,7 @@ const TicketsManagement: React.FC = () => {
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Delete Ticket</h3>
                 </div>
-                
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Are you sure you want to delete this ticket? This action cannot be undone.
-                </p>
-
+                <p className="text-gray-600 dark:text-gray-300 mb-6">Are you sure you want to delete this ticket? This action cannot be undone.</p>
                 <div className="flex space-x-3">
                   <button
                     onClick={() => setShowDeleteConfirm(null)}
