@@ -177,30 +177,28 @@ const AdminHome: React.FC = () => {
 
   // Calculate stats
   const totalTickets = incidents.length;
-  const activeStaff = staff.filter(s => s.cr6dd_availability === 'Available').length;
+  const activeStaff = staff.filter(s => s.cr6dd_availability === "True").length;
   const resolutionTimes = incidents
-    .filter(i => i.statuscode === 2) // Resolved incidents
+    .filter(i => i.cr6dd_status === 'Resolved') // Resolved incidents
     .map(i => parseFloat(calculateResolutionTime(i.createdon, i.modifiedon)));
   const avgResolutionTime = resolutionTimes.length > 0
     ? (resolutionTimes.reduce((sum, time) => sum + time, 0) / resolutionTimes.length).toFixed(1)
     : '0.0';
 
-  // Mock customer satisfaction (not in API data, using static value)
-  const customerSatisfaction = '94%';
-
+  // Change and ChangeType still needs to be implemented
   const stats = [
-    { name: 'Total Tickets', value: totalTickets.toString(), change: '+12%', changeType: 'increase', icon: FileText },
-    { name: 'Active Support Staff', value: activeStaff.toString(), change: '+2', changeType: 'increase', icon: Users },
-    { name: 'Avg Resolution Time', value: `${avgResolutionTime}h`, change: '-0.8h', changeType: 'decrease', icon: Clock },
-    { name: 'Customer Satisfaction', value: customerSatisfaction, change: '+3%', changeType: 'increase', icon: TrendingUp },
+    { name: 'Total Tickets', value: totalTickets.toString(), icon: FileText},
+    { name: 'Avg Resolution Time', value: `${avgResolutionTime}h`, icon: Clock},
+    { name: 'Total Support Staff', value: staff.length.toString(), icon: Users},
+    { name: 'Active Support Staff', value: activeStaff.toString(), icon: Users},
   ];
 
   // Department performance
   const departments = Array.from(new Set(incidents.map(i => i.cr6dd_departmenttype)));
   const departmentStats = departments.map(dept => {
     const deptIncidents = incidents.filter(i => i.cr6dd_departmenttype === dept);
-    const resolved = deptIncidents.filter(i => i.statuscode === 2).length;
-    const pending = deptIncidents.filter(i => i.statuscode === 1).length;
+    const resolved = deptIncidents.filter(i => i.cr6dd_status === "Resolved").length;
+    const pending = deptIncidents.filter(i => i.cr6dd_status === "In progress").length;
     const percentage = deptIncidents.length > 0 ? Math.round((resolved / deptIncidents.length) * 100) : 0;
     return {
       name: dept,
@@ -212,25 +210,27 @@ const AdminHome: React.FC = () => {
   });
 
   // Monthly ticket volume
-  const monthlyTickets = Array.from({ length: 12 }, (_, i) => {
-    const month = new Date(2025, i, 1).toLocaleString('default', { month: 'short' });
+  const monthlyTickets = Array.from({ length: 12 }, (_, index) => {
+    const month = new Date(2025, index, 1).toLocaleString('default', { month: 'short' });
     const monthIncidents = incidents.filter(i => {
       const created = new Date(i.createdon); // Convert string to Date
-      return created.getFullYear() === 2025; // && created.getMonth() === i;
+      // current year, (dont hardcode year)
+      return created.getFullYear() === new Date().getFullYear() && created.getMonth() === index;
     });
     return {
       month,
       tickets: monthIncidents.length,
-      resolved: monthIncidents.filter(i => i.statuscode === 2).length,
+      resolved: monthIncidents.filter(i => i.cr6dd_status === "Resolved").length,
     };
   });
 
   // Resolution time trend
-  const resolutionTimeData = Array.from({ length: 12 }, (_, i) => {
-    const month = new Date(2025, i, 1).toLocaleString('default', { month: 'short' });
+  const resolutionTimeData = Array.from({ length: 12 }, (_, index) => {
+    const month = new Date(2025, index, 1).toLocaleString('default', { month: 'short' });
     const monthIncidents = incidents.filter(i => {
-      const created = new Date(i.createdon); // Convert string to Date
-      return created.getFullYear() === 2025; // && created.getMonth() === i && i.statuscode === 2;
+      const created = new Date(i.createdon);
+      return created.getFullYear() === new Date().getFullYear() && created.getMonth() === index && i.cr6dd_status === "Resolved";
+
     });
     const times = monthIncidents.map(i => parseFloat(calculateResolutionTime(i.createdon, i.modifiedon)));
     const avgTime = times.length > 0 ? (times.reduce((sum, time) => sum + time, 0) / times.length).toFixed(1) : '0.0';
@@ -245,27 +245,39 @@ const AdminHome: React.FC = () => {
   ];
 
   // Top performing agents
-  const topAgents = staff
-    .map(s => {
-      const agentIncidents = incidents.filter(i => i._cr6dd_assignedresolver_value === s._cr6dd_userid_value);
-      const resolved = agentIncidents.filter(i => i.statuscode === 2).length;
-      return {
-        name: s._cr6dd_userid_value ? apiData.user_table.find(u => u.cr6dd_userid === s._cr6dd_userid_value)?.cr6dd_name || 'Unknown' : 'Unknown',
-        tickets: agentIncidents.length,
-        satisfaction: 4.5 + Math.random() * 0.4, // Mock satisfaction score
-        department: s.cr6dd_departmentname,
-      };
-    })
-    .filter(a => a.tickets > 0)
+  type AgentTicket = {
+    name: string;
+    tickets: number;
+    department: string;
+  };
+  type AgentTicketsMap = {
+    [agentName: string]: AgentTicket;
+  };
+
+  const agentTickets: AgentTicketsMap = incidents
+    .filter(i => i.cr6dd_status === 'Resolved')
+    .reduce((acc: AgentTicketsMap, curr) => {
+      const agentName = curr.cr6dd_resolvername || 'Unknown Agent';
+      if (!acc[agentName]) {
+        acc[agentName] = { name: agentName, tickets: 0, department: curr.cr6dd_departmenttype};
+      }
+      acc[agentName].tickets += 1;
+      return acc;
+    }, {});
+  // Convert agentTickets map to sorted array for use in rendering
+  const topAgents = Object.values(agentTickets)
+    .map(agent => ({
+      ...agent,
+    }))
     .sort((a, b) => b.tickets - a.tickets)
     .slice(0, 5);
 
   // Severity distribution over time (new chart data)
-  const severityOverTime = Array.from({ length: 12 }, (_, i) => {
-    const month = new Date(2025, i, 1).toLocaleString('default', { month: 'short' });
+  const severityOverTime = Array.from({ length: 12 }, (_, index) => {
+    const month = new Date(2025, index, 1).toLocaleString('default', { month: 'short' });
     const monthIncidents = incidents.filter(i => {
-      const created = new Date(i.createdon); // Convert string to Date
-      return created.getFullYear() === 2025; // && created.getMonth() === i;
+      const created = new Date(i.createdon);
+      return created.getFullYear() === 2025 && created.getMonth() === index;
     });
     return {
       month,
@@ -295,12 +307,12 @@ const AdminHome: React.FC = () => {
                   <div>
                     <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300">{stat.name}</p>
                     <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
-                    <div className={`text-xs sm:text-sm flex items-center mt-1 ${
+                    {/* <div className={`text-xs sm:text-sm flex items-center mt-1 ${
                       stat.changeType === 'increase' ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'
                     }`}>
                       <span>{stat.change}</span>
                       <span className="ml-1">vs last month</span>
-                    </div>
+                    </div>/ */}
                   </div>
                   <div className="bg-blue-100 p-2.5 sm:p-3 rounded-lg">
                     <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
@@ -379,7 +391,7 @@ const AdminHome: React.FC = () => {
                       x2="380"
                       y2={30 + (line * 25)}
                       stroke="currentColor"
-                      strokeOpacity="0.1"
+                      strokeOpacity="0.2"
                       className="text-gray-400"
                     />
                   ))}
@@ -513,8 +525,6 @@ const AdminHome: React.FC = () => {
                   <div className="text-right">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">{agent.tickets}</p>
                     <div className="flex items-center space-x-1">
-                      <span className="text-xs text-yellow-500">★</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{agent.satisfaction.toFixed(1)}</span>
                     </div>
                   </div>
                 </div>
@@ -522,6 +532,7 @@ const AdminHome: React.FC = () => {
             </div>
           </div>
         </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 sm:gap-8">
           {/* Department Performance */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
