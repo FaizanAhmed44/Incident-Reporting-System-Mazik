@@ -557,8 +557,9 @@ interface LocationState {
       classification: {
         category: string;
         severity: string;
+        title: string;
         summary: string;
-        email: string;
+        email: string;        
       };
       staff_assignment: {
         assigned_staff_email: string;
@@ -576,6 +577,7 @@ interface ProcessedData {
   email: string;
   department: string;
   category: string;
+  title: string;
   description: string;
   summary: string;
   priority: string;
@@ -612,12 +614,13 @@ const IncidentConfirmation: React.FC = () => {
       staffId: `EMP-${Date.now().toString().slice(-5)}`,
       staffName: apiResponse.staff_assignment.assigned_staff_name,
       email: apiResponse.classification.email,
+      title: apiResponse.classification.title,
       department: apiResponse.staff_assignment.assigned_department,
       category: apiResponse.classification.category,
       description,
       summary: apiResponse.classification.summary,
       priority: apiResponse.classification.severity,
-      staffEmail: apiResponse.staff_assignment.assigned_staff_email,
+      staffEmail: apiResponse.staff_assignment.assigned_staff_email,      
       staffSkillset: apiResponse.staff_assignment.staff_skillset,
       reportedByEmail: reportedBy.email,
       reportedByName: reportedBy.name,
@@ -694,7 +697,7 @@ const IncidentConfirmation: React.FC = () => {
 
     const payload: IncidentConfirmationPayloads = {
       incident: {            
-        Title: "System Downtime",
+        Title: processedData.title,
         Description: processedData.description,
         Status: "New",
         DepartmentType: processedData.department,
@@ -706,7 +709,6 @@ const IncidentConfirmation: React.FC = () => {
         ResolverName: processedData.staffName,
         Severity: processedData.priority,
         descriptionSummary: processedData.summary,
-        // emailDraft: "Subject: Downtime Update\nDear Alice, we are addressing the server issue."
         emailDraft: processedData.email
       },
      
@@ -757,7 +759,7 @@ const IncidentConfirmation: React.FC = () => {
               </div>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Processing Your Incident
+              Processing Your Incident 
             </h2>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mb-6">
               AI is analyzing your request and generating details...
@@ -808,7 +810,7 @@ const IncidentConfirmation: React.FC = () => {
             </button>
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
-                Confirm Incident Details
+                Confirm Incident Details 
               </h1>
               <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300">
                 Review AI-processed information before submission
@@ -861,6 +863,26 @@ const IncidentConfirmation: React.FC = () => {
               <div className="p-4 sm:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                        Title
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editableData.title || ''}
+                          onChange={(e) => handleInputChange('title', e.target.value)}
+                          className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      ) : (
+                        <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <User className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                          <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
+                            {processedData.title}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                         Staff Name

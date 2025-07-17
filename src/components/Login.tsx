@@ -210,7 +210,7 @@ const Login: React.FC = () => {
               </button>
             </form>
 
-            <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-600">
+            {/* <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-600">
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center mb-3 sm:mb-4">Demo Access:</p>
               <div className="grid grid-cols-1 gap-2">
                 <button
@@ -235,7 +235,7 @@ const Login: React.FC = () => {
                   Administrator
                 </button>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
