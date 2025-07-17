@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Home, FileText, LogOut, User, Users, Clock, TrendingUp, Menu, X, Moon, Sun, UserCog } from 'lucide-react';
+import { Home, FileText, LogOut, User, Users, Clock, Menu, X, Moon, Sun, UserCog } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import StaffManagement from './admin/StaffManagement';
 import TicketsManagement from './admin/TicketManagement';
-import { get_all_data, ApiResponse, Incident } from '../api/dashboard_admin';
+import { get_all_data, ApiResponse } from '../api/dashboard_admin'; // Incident
 
 // Utility function to calculate time difference in hours
 const calculateResolutionTime = (created: string, modified: string) => {
@@ -13,6 +13,16 @@ const calculateResolutionTime = (created: string, modified: string) => {
   const modifiedDate = new Date(modified);
   const diffMs = modifiedDate.getTime() - createdDate.getTime();
   return (diffMs / (1000 * 60 * 60)).toFixed(1); // Convert to hours
+};
+
+// Utility function to format time difference in hours and minutes
+const formatTimeAgo = (modified: string) => {
+  const modifiedDate = new Date(modified);
+  const now = new Date();
+  const diffMs = now.getTime() - modifiedDate.getTime();
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  return hours > 0 ? `${hours}h ${minutes}m ago` : `${minutes}m ago`;
 };
 
 const AdminDashboard: React.FC = () => {
@@ -383,13 +393,13 @@ const AdminHome: React.FC = () => {
                   </defs>
                   
                   {/* Grid lines */}
-                  {[0, 1, 2, 3, 4, 5, 6].map((line) => (
+                  {[0, 20, 40, 60, 80].map((line) => (
                     <line
                       key={line}
                       x1="40"
-                      y1={30 + (line * 25)}
+                      y1={180 - (line * 2.25)}
                       x2="380"
-                      y2={30 + (line * 25)}
+                      y2={180 - (line * 2.25)}
                       stroke="currentColor"
                       strokeOpacity="0.2"
                       className="text-gray-400"
@@ -405,7 +415,7 @@ const AdminHome: React.FC = () => {
                     strokeLinejoin="round"
                     points={resolutionTimeData.map((data, index) => {
                       const x = 40 + (index * 28);
-                      const y = 180 - (data.time * 25);
+                      const y = 180 - (data.time * 2.25);
                       return `${x},${y}`;
                     }).join(' ')}
                   />
@@ -415,7 +425,7 @@ const AdminHome: React.FC = () => {
                     fill="url(#resolutionGradient)"
                     points={`40,180 ${resolutionTimeData.map((data, index) => {
                       const x = 40 + (index * 28);
-                      const y = 180 - (data.time * 25);
+                      const y = 180 - (data.time * 2.25);
                       return `${x},${y}`;
                     }).join(' ')} 368,180`}
                   />
@@ -423,7 +433,7 @@ const AdminHome: React.FC = () => {
                   {/* Data points */}
                   {resolutionTimeData.map((data, index) => {
                     const x = 40 + (index * 28);
-                    const y = 180 - (data.time * 25);
+                    const y = 180 - (data.time * 2.25);
                     return (
                       <circle
                         key={index}
@@ -439,11 +449,11 @@ const AdminHome: React.FC = () => {
                   })}
                   
                   {/* Y-axis labels */}
-                  {[0, 1, 2, 3, 4, 5, 6].map((value) => (
+                  {[0, 20, 40, 60, 80].map((value) => (
                     <text
                       key={value}
                       x="35"
-                      y={185 - (value * 25)}
+                      y={185 - (value * 2.205)}
                       textAnchor="end"
                       className="text-xs fill-gray-500 dark:fill-gray-400"
                     >
@@ -472,40 +482,58 @@ const AdminHome: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
 
           {/* Tickets by Severity */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">Tickets by Severity</h3>
-            <div className="space-y-4">
-              {severityData.map((item) => {
-                const total = severityData.reduce((sum, data) => sum + data.count, 0);
-                const percentage = Math.round((item.count / total) * 100);
-                
-                return (
-                  <div key={item.severity}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">{item.severity}</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white">{item.count}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">({percentage}%)</span>
-                      </div>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-300 ${item.color}`}
-                        style={{ width: `${percentage}%` }}
-                      ></div>
-                    </div>
+          
+  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+  <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">Tickets by Severity</h3>
+  <div className="flex flex-col items-center">
+    <div className="relative w-48 h-48 sm:w-64 sm:h-64">
+      <svg className="w-full h-full" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="40" fill="#1F2937" stroke="#4B5563" strokeWidth="5" />
+          {severityData.map((item, index) => {
+            const total = severityData.reduce((sum, data) => sum + data.count, 0);
+            const percentage = (item.count / total) * 100;
+            const startAngle = severityData.slice(0, index).reduce((sum, data) => sum + (data.count / total) * 360, 0);
+            const endAngle = startAngle + (percentage / 100) * 360;
+            const largeArcFlag = percentage > 50 ? 1 : 0;
+            const startX = 50 + 40 * Math.cos((startAngle - 90) * Math.PI / 180);
+            const startY = 50 + 40 * Math.sin((startAngle - 90) * Math.PI / 180);
+            const endX = 50 + 40 * Math.cos((endAngle - 90) * Math.PI / 180);
+            const endY = 50 + 40 * Math.sin((endAngle - 90) * Math.PI / 180);
+
+            const colors: { [key: string]: string } = { 'High': '#EF4444', 'Medium': '#FBBF24', 'Low': '#10B981' };
+            return (
+              <path
+                key={item.severity}
+                d={`M50,50 L${startX},${startY} A40,40 0 ${largeArcFlag},1 ${endX},${endY} Z`}
+                fill={colors[item.severity as keyof typeof colors]}
+                className="transition-all duration-300 hover:opacity-80"
+              >
+                <title>{item.severity}: {item.count} ({Math.round(percentage)}%)</title>
+              </path>
+            );
+          })}
+          <circle cx="50" cy="50" r="30" fill="#1F2937" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-sm sm:text-base font-semibold text-white">
+                    {severityData.reduce((sum, data) => sum + data.count, 0)} Tickets
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center justify-center space-x-4 mt-4 text-xs sm:text-sm">
+                {severityData.map((item) => (
+                  <div key={item.severity} className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
+                    <span className="text-gray-900 dark:text-white text-xs">{item.severity}: {item.count}</span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Top Performing Agents */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">Top Performing Agents</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">Top Performing Staffs</h3>
             <div className="space-y-4">
               {topAgents.map((agent, index) => (
                 <div key={agent.name} className="flex items-center space-x-3">
@@ -562,7 +590,7 @@ const AdminHome: React.FC = () => {
 
           {/* New Severity Distribution Over Time Chart */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div className="flex items-center justify-between mb-5 sm:mb-12 sm:pb-12">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Severity Distribution Over Time</h3>
               <div className="flex items-center space-x-4 text-xs sm:text-sm">
                 <div className="flex items-center space-x-2">
@@ -606,7 +634,7 @@ const AdminHome: React.FC = () => {
                           title={`${data.low} low severity tickets`}
                         ></div>
                       </div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{data.month}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium ">{data.month}</span>
                     </div>
                   );
                 })}
@@ -615,37 +643,110 @@ const AdminHome: React.FC = () => {
           </div>
           
           {/* Recent Activity */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">Recent Activity</h3>
-            <div className="space-y-4">
-              {incidents
-                .sort((a, b) => new Date(b.modifiedon).getTime() - new Date(a.modifiedon).getTime())
-                .slice(0, 4)
-                .map((activity, index) => {
-                  const actionType = activity.statuscode === 2 ? 'resolution' : activity.statuscode === 1 ? 'assignment' : 'system';
-                  const actionText = activity.statuscode === 2 ? 'Ticket resolved' : activity.statuscode === 1 ? 'Ticket assigned' : 'Ticket updated';
-                  const timeAgo = ((new Date().getTime() - new Date(activity.modifiedon).getTime()) / (1000 * 60)).toFixed(0) + ' minutes ago';
-                  return (
-                    <div key={index} className="flex items-start space-x-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                      <div className={`w-2 h-2 rounded-full mt-2 ${
-                        actionType === 'assignment' ? 'bg-blue-500' :
-                        actionType === 'resolution' ? 'bg-green-500' :
-                        actionType === 'alert' ? 'bg-red-500' : 'bg-gray-500'
-                      }`}></div>
-                      <div className="flex-1">
-                        <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{actionText}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {activity.cr6dd_departmenttype} • {timeAgo}
-                        </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2  gap-6 sm:gap-8">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">Recent Activity</h3>
+              <div className="space-y-4">
+                {incidents
+                  .sort((a, b) => new Date(b.modifiedon).getTime() - new Date(a.modifiedon).getTime())
+                  .slice(0, 4)
+                  .map((activity, index) => {
+                    const actionType = activity.cr6dd_status === "Resolved" ? 'resolution' : activity.cr6dd_status === "In progress" ? 'assignment' : 'system';
+                    const actionText = activity.cr6dd_status === "Resolved" ? 'Ticket resolved' : activity.cr6dd_status === "In progress" ? 'Ticket assigned' : 'Ticket updated';
+                    return (
+                      <div key={index} className="flex items-start space-x-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <div className={`w-2 h-2 rounded-full mt-2 ${
+                          actionType === 'assignment' ? 'bg-blue-500' :
+                          actionType === 'resolution' ? 'bg-green-500' :
+                          actionType === 'system' ? 'bg-red-500' : 'bg-gray-500'
+                        }`}></div>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{actionText}</p>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                              {activity.cr6dd_incidentid}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {activity.cr6dd_departmenttype} • {formatTimeAgo(activity.modifiedon)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })} 
+                </div>
+              </div>
+              {/* Department Pi Chart */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">              
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">Tickets by Department Name</h3>
+            <div className="flex flex-col items-center">
+              <div className="relative w-48 h-48 sm:w-64 sm:h-64">
+                <svg className="w-full h-full" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" fill="#1F2937" stroke="#4B5563" strokeWidth="5" />
+                  {departmentStats.map((dept, index) => {
+                    const total = departmentStats.reduce((sum, data) => sum + data.tickets, 0);
+                    const percentage = (dept.tickets / total) * 100;
+                    const startAngle = departmentStats.slice(0, index).reduce((sum, data) => sum + (data.tickets / total) * 360, 0);
+                    const endAngle = startAngle + (percentage / 100) * 360;
+                    const largeArcFlag = percentage > 50 ? 1 : 0;
+                    const startX = 50 + 40 * Math.cos((startAngle - 90) * Math.PI / 180);
+                    const startY = 50 + 40 * Math.sin((startAngle - 90) * Math.PI / 180);
+                    const endX = 50 + 40 * Math.cos((endAngle - 90) * Math.PI / 180);
+                    const endY = 50 + 40 * Math.sin((endAngle - 90) * Math.PI / 180);
+
+                    const colors = ['#EF4444', '#FBBF24', '#10B981', '#8B5CF6', '#EC4899', '#3B82F6'];
+                    const colorIndex = index % colors.length;
+                    return (
+                      <path
+                        key={dept.name}
+                        d={`M50,50 L${startX},${startY} A40,40 0 ${largeArcFlag},1 ${endX},${endY} Z`}
+                        fill={colors[colorIndex]}
+                        className="transition-all duration-300 hover:opacity-80"
+                      >
+                        <title>{dept.name}: {dept.tickets} ({Math.round(percentage)}%)</title>
+                      </path>
+                    );
+                  })}
+                  <circle cx="50" cy="50" r="30" fill="#1F2937" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-sm sm:text-base font-semibold text-white">
+                    {departmentStats.reduce((sum, data) => sum + data.tickets, 0)} Tickets
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col items-center justify-between h-16 mt-4 text-xs sm:text-sm">
+            <div className="flex items-center justify-center space-x-4">
+              {departmentStats.slice(0, 2).map((dept, index) => {
+                const colors = ['#EF4444', '#FBBF24', '#10B981', '#8B5CF6', '#EC4899', '#3B82F6'];
+                const colorIndex = index % colors.length;
+                return (
+                  <div key={dept.name} className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: colors[colorIndex] }}></div>
+                    <span className="text-gray-900 dark:text-white text-xs">{dept.name}: {dept.tickets}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center justify-center space-x-4">
+              {departmentStats.slice(2, 4).map((dept, index) => {
+                const colors = ['#EF4444', '#FBBF24', '#10B981', '#8B5CF6', '#EC4899', '#3B82F6'];
+                const colorIndex = (index + 2) % colors.length;
+                return (
+                  <div key={dept.name} className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: colors[colorIndex] }}></div>
+                    <span className="text-gray-900 dark:text-white text-xs">{dept.name}: {dept.tickets}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+            </div>
+          </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
