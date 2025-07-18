@@ -9,11 +9,11 @@ import {
   Eye,
   Calendar,
   User,
-  Loader2,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { getUserTickets } from "../../api/incidentApi";
 import { useNavigate } from 'react-router-dom';
+import { CustomLoader } from '../ui/CustomLoader';
 
 interface Ticket {
   id: string;
@@ -28,6 +28,93 @@ interface Ticket {
   assignedResolverEmail?: string;
   descriptionSummary: string;
 }
+
+// const CustomLoader: React.FC = () => {
+//   return (
+//     <div className="custom-loader">
+//       <svg
+//         width="48"
+//         height="48"
+//         viewBox="0 0 100 100"
+//         xmlns="http://www.w3.org/2000/svg"
+//       >
+//         <defs>
+//           <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+//             <stop offset="0%" style={{ stopColor: "#6366F1", stopOpacity: 1 }} />
+//             <stop offset="100%" style={{ stopColor: "#3B82F6", stopOpacity: 1 }} />
+//           </linearGradient>
+//         </defs>
+//         <circle
+//           cx="50"
+//           cy="50"
+//           r="40"
+//           fill="none"
+//           stroke="url(#gradient)"
+//           strokeWidth="8"
+//           strokeLinecap="round"
+//           className="ring"
+//         />
+//         <circle cx="50" cy="20" r="4" fill="#6366F1" className="particle particle-1" />
+//         <circle cx="80" cy="50" r="4" fill="#3B82F6" className="particle particle-2" />
+//         <circle cx="50" cy="80" r="4" fill="#3B82F6" className="particle particle-3" />
+//       </svg>
+//       <style>
+//         {`
+//           .custom-loader {
+//             display: flex;
+//             justify-content: center;
+//             align-items: center;
+//           }
+//           .custom-loader .ring {
+//             animation: spin 2s linear infinite;
+//           }
+//           .custom-loader .particle {
+//             animation: orbit 2s linear infinite, pulse 1s ease-in-out infinite;
+//           }
+//           .custom-loader .particle-1 {
+//             animation-duration: 2s, 1s;
+//           }
+//           .custom-loader .particle-2 {
+//             animation-duration: 2.2s, 1s;
+//             animation-delay: 0.2s;
+//           }
+//           .custom-loader .particle-3 {
+//             animation-duration: 1.8s, 1s;
+//             animation-delay: 0.4s;
+//           }
+//           @keyframes spin {
+//             0% { transform: rotate(0deg); }
+//             100% { transform: rotate(360deg); }
+//           }
+//           @keyframes orbit {
+//             0% {
+//               transform: rotate(0deg) translateX(30px) rotate(0deg);
+//             }
+//             100% {
+//               transform: rotate(360deg) translateX(30px) rotate(-360deg);
+//             }
+//           }
+//           @keyframes pulse {
+//             0%, 100% { opacity: 1; }
+//             50% { opacity: 0.5; }
+//           }
+//           @media (min-width: 640px) {
+//             .custom-loader svg {
+//               width: 64px;
+//               height: 64px;
+//             }
+//           }
+//           .dark .custom-loader .ring {
+//             stroke: #E0E7FF;
+//           }
+//           .dark .custom-loader .particle {
+//             fill: #E0E7FF;
+//           }
+//         `}
+//       </style>
+//     </div>
+//   );
+// };
 
 const TrackTickets: React.FC = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -66,7 +153,6 @@ const TrackTickets: React.FC = () => {
           descriptionSummary: apiTicket.descriptionSummary,
         }));
 
-        // Sort tickets by reportedOn in descending order (newest first)
         const sortedTickets = mappedTickets.sort((a, b) => {
           return new Date(b.reportedOn).getTime() - new Date(a.reportedOn).getTime();
         });
@@ -204,7 +290,7 @@ const TrackTickets: React.FC = () => {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto" />
+          <CustomLoader />
           <h2 className="mt-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
             Loading Your Details...
           </h2>
@@ -218,7 +304,7 @@ const TrackTickets: React.FC = () => {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center bg-red-50 dark:bg-red-900/20 p-8 rounded-lg">
           <XCircle className="h-12 w-12 text-red-500 mx-auto" />
-          <h2 className="mt-4 text-xl font-semibold text-red-700 dark:text-red-300">
+          <h2 className="mt-4 text-xl font-semibold taxet-red-700 dark:text-red-300">
             An Error Occurred
           </h2>
           <p className="text-red-600 dark:text-red-400">{error}</p>

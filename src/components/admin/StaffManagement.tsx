@@ -13,6 +13,8 @@ import { get_users, Staff } from "../../api/users_to_admin";
 import { addStaffUser } from "../../api/add_staff";
 import { updateStaffUser, UpdateStaffRequest } from "../../api/edit_staff";
 import { deleteStaffUser } from "../../api/delete_staff";
+import { CustomLoader } from '../ui/CustomLoader';
+
 
 interface NewStaff {
   id: string;
@@ -202,32 +204,6 @@ const StaffManagement: React.FC = () => {
     }));
   };
 
-  // const handleAddStaff = async () => {
-  //   try {
-  //     const response = await addStaffUser(newStaff);
-  //     const newStaffMember: NewStaff = {
-  //       id: response.staff_id,
-  //       name: newStaff.name,
-  //       email: newStaff.email,
-  //       department: newStaff.department,
-  //       skillset: newStaff.skillset,
-  //       joinDate: new Date().toISOString().split('T')[0],
-  //       status: 'active',
-  //       lastLogin: undefined
-  //     };
-  //     setStaffMembers([...staffMembers, newStaffMember]);
-  //     setNewStaff({
-  //       name: '',
-  //       email: '',
-  //       department: '',
-  //       skillset: '',
-  //       password: ''
-  //     });
-  //     setShowAddModal(false);
-  //   } catch (err) {
-  //     setError('Failed to add staff member. Please try again.');
-  //   }
-  // };
 
   const handleEditStaff = (staff: NewStaff) => {
     setEditingStaff({
@@ -353,18 +329,18 @@ const StaffManagement: React.FC = () => {
           .join(" • ")
       : "";
 
-  if (loading) {
-    return (
-      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-gray-600 dark:text-gray-300">
-            Loading staff members...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
+      if (loading) {
+        return (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center">
+              <CustomLoader />
+              <h2 className="mt-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
+                Loading Employee Details...
+              </h2>
+            </div>
+          </div>
+        );
+      }
   if (error) {
     return (
       <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">

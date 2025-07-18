@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Search, Filter, Clock, AlertCircle, CheckCircle, Eye, RefreshCw, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchIncidents } from '../../api/supportApi';
+import { CustomLoader } from '../ui/CustomLoader';
+
 
 interface Incident {
   IncidentID: string;
@@ -143,14 +145,12 @@ const SupportTickets: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-center h-64">
-            <div className="flex items-center space-x-3">
-              <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
-              <p className="text-lg text-gray-600 dark:text-gray-300">Loading tickets...</p>
-            </div>
-          </div>
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center">
+          <CustomLoader />
+          <h2 className="mt-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
+            Loading Your Details...
+          </h2>
         </div>
       </div>
     );

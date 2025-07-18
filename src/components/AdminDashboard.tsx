@@ -6,6 +6,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import StaffManagement from './admin/StaffManagement';
 import TicketsManagement from './admin/TicketManagement';
 import { get_all_data, ApiResponse } from '../api/dashboard_admin'; // Incident
+import { CustomLoader } from './ui/CustomLoader';
+
 
 // Utility function to calculate time difference in hours
 const calculateResolutionTime = (created: string, modified: string) => {
@@ -168,8 +170,13 @@ const AdminHome: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-gray-600 dark:text-gray-300">Loading...</div>
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center">
+          <CustomLoader />
+          <h2 className="mt-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
+            Loading Dashboard Details...
+          </h2>
+        </div>
       </div>
     );
   }

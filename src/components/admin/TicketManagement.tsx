@@ -4,6 +4,8 @@ import { get_tickets, Incident } from '../../api/tickets_to_admin';
 import { deleteTicket } from '../../api/delete_ticket';
 import { getStaffList, Staff } from '../../api/active_staff';
 import { updateIncident, UpdateIncidentRequest } from '../../api/edit_ticket';
+import { CustomLoader } from '../ui/CustomLoader';
+
 
 interface Ticket {
   id: string;
@@ -192,10 +194,12 @@ const TicketsManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading tickets...</p>
+          <CustomLoader />
+          <h2 className="mt-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
+            Loading All Tickets...
+          </h2>
         </div>
       </div>
     );

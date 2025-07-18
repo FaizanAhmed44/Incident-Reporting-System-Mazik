@@ -9,6 +9,8 @@ import TicketDetails from './employee/TicketDetail';
 import TicketConfirmation from './employee/TicketConfirmation';
 import { getUserTickets } from "../api/incidentApi"; 
 import IncidentConfirmation from './employee/IncidentConfirmation';
+import { CustomLoader } from './ui/CustomLoader';
+
 
 interface Ticket {
   id: string;
@@ -187,21 +189,7 @@ const EmployeeHome: React.FC = () => {
           assignedResolverName: apiTicket.resolverName || "Unassigned", // Map resolver name if available
           assignedResolverEmail: apiTicket.resolverEmail || "", // Map resolver email if available
 }));
-        // const mappedTickets: Ticket[] = response.tickets.map((apiTicket) => ({
-        //   id: apiTicket.incidentID,
-        //   title: apiTicket.title || apiTicket.description,
-        //   category: apiTicket.category,
-        //   status: apiTicket.status
-        //     .toLowerCase()
-        //     .replace(" ", "-") as Ticket["status"],
-        //   priority: "medium",
-        //   createdAt: apiTicket.lastUpdated,
-        //   updatedAt: apiTicket.lastUpdated,
-        //   assignedTeam: apiTicket.category,
-        //   assignedAgent: "Unassigned",
-        //   assignedResolverName: "Unassigned", 
-        // }));
-
+       
         setTickets(mappedTickets);
       } catch (err: any) {
         setError(
@@ -237,9 +225,9 @@ const EmployeeHome: React.FC = () => {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto" />
+          <CustomLoader />
           <h2 className="mt-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
-            Loading Your Tickets...
+            Loading Your Details...
           </h2>
         </div>
       </div>

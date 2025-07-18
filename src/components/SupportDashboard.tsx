@@ -1,21 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Home, FileText, Settings, LogOut, User, Menu, X, Moon, Sun } from 'lucide-react';
+import { Home, FileText, LogOut, User, Menu, X, Moon, Sun, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { fetchIncidents } from '../api/supportApi'; // Your API function
 import SupportTickets from './support/SupportTickets';
 import TicketDetails from './support/TicketDetails';
+import { CustomLoader } from './ui/CustomLoader';
+
+
+interface Incident {
+  IncidentID: string;
+  ReporterName: string;
+  Status: string;
+  Department: string;
+  Severity: string;
+  Summary: string;
+  Title: string;
+  ReporterEmail: string;
+  ReportedOn: string;
+}
 
 const SupportDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navigation = [
     { name: 'Dashboard', href: '/support', icon: Home },
     { name: 'Assigned Tickets', href: '/support/tickets', icon: FileText },
-    { name: 'Settings', href: '/support/settings', icon: Settings },
   ];
 
   const isActive = (path: string) => {
@@ -122,7 +136,6 @@ const SupportDashboard: React.FC = () => {
           <Route path="/" element={<SupportHome />} />
           <Route path="/tickets" element={<SupportTickets />} />
           <Route path="/ticket/:ticketId" element={<TicketDetails />} />
-          <Route path="/settings" element={<SupportSettings />} />
         </Routes>
       </div>
     </div>
@@ -131,32 +144,228 @@ const SupportDashboard: React.FC = () => {
 
 const SupportHome: React.FC = () => {
   const { user } = useAuth();
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const stats = [
-    { name: 'Open Tickets', value: '12', change: '+2', changeType: 'increase' },
-    { name: 'Resolved Today', value: '8', change: '+4', changeType: 'increase' },
-    { name: 'Average Response', value: '2.4h', change: '-0.3h', changeType: 'decrease' },
-    { name: 'Customer Rating', value: '4.8', change: '+0.1', changeType: 'increase' },
+  // Function to fetch incidents
+  const loadIncidents = async () => {
+    console.log('loadIncidents called');
+    console.log('User object:', user);
+    
+    if (!user?.id) {
+      console.error('No user ID found');
+      setError('User ID not found. Please log in again.');
+      setLoading(false);
+      return;
+    }
+    
+    console.log('Fetching incidents for user ID:', user.id);
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetchIncidents({ userId: user.id });
+      console.log('API response:', response);
+      
+      // Handle both single incident and array of incidents
+      const incidentsArray = Array.isArray(response) ? response : [response];
+      console.log('Processed incidents array:', incidentsArray);
+      
+      setIncidents(incidentsArray);
+    } catch (err) {
+      console.error('Error loading incidents:', err);
+      setError(`Failed to load incidents: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load incidents on component mount
+  useEffect(() => {
+    console.log('useEffect triggered, user:', user);
+    
+    // Add a small delay to ensure user is loaded
+    const timer = setTimeout(() => {
+      loadIncidents();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [user?.id]);
+
+  // Calculate dynamic statistics
+  const calculateStats = () => {
+    const totalIncidents = incidents.length;
+    const openTickets = incidents.filter(incident => 
+      incident.Status && !['Resolved', 'Closed', 'Completed'].includes(incident.Status)
+    ).length;
+    
+    const resolvedToday = incidents.filter(incident => {
+      const today = new Date().toISOString().split('T')[0];
+      return incident.Status === 'Resolved' && 
+             incident.ReportedOn && 
+             incident.ReportedOn.startsWith(today);
+    }).length;
+
+    const highPriorityCount = incidents.filter(incident => 
+      incident.Severity === 'High' || incident.Severity === 'Critical'
+    ).length;
+
+    return {
+      openTickets,
+      resolvedToday,
+      totalIncidents,
+      highPriorityCount
+    };
+  };
+
+  const stats = calculateStats();
+
+  const statsData = [
+    { 
+      name: 'Open Tickets', 
+      value: stats.openTickets.toString(), 
+      change: stats.highPriorityCount > 0 ? `${stats.highPriorityCount} high priority` : 'All normal',
+      changeType: stats.highPriorityCount > 0 ? 'increase' : 'normal'
+    },
+    { 
+      name: 'Resolved Today', 
+      value: stats.resolvedToday.toString(), 
+      change: stats.resolvedToday > 0 ? '+' + stats.resolvedToday : '0',
+      changeType: 'increase' 
+    },
+    { 
+      name: 'Total Incidents', 
+      value: stats.totalIncidents.toString(), 
+      change: `${stats.totalIncidents} total`,
+      changeType: 'normal' 
+    },
+    { 
+      name: 'Departments', 
+      value: new Set(incidents.map(i => i.Department).filter(Boolean)).size.toString(),
+      change: 'Active',
+      changeType: 'normal' 
+    },
   ];
+
+  // Get priority color
+  const getPriorityColor = (severity: string) => {
+    switch (severity?.toLowerCase()) {
+      case 'critical':
+      case 'high':
+        return 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300';
+      case 'medium':
+        return 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300';
+      case 'low':
+        return 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300';
+      default:
+        return 'bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-gray-300';
+    }
+  };
+
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'open':
+      case 'new':
+        return 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300';
+      case 'in progress':
+      case 'assigned':
+        return 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300';
+      case 'resolved':
+      case 'closed':
+        return 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300';
+      default:
+        return 'bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-gray-300';
+    }
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+      
+      if (diffInHours < 1) return 'Just now';
+      if (diffInHours < 24) return `${diffInHours}h ago`;
+      if (diffInHours < 48) return 'Yesterday';
+      return date.toLocaleDateString();
+    } catch {
+      return 'Unknown';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center">
+          <CustomLoader />
+          <h2 className="mt-4 text-xl font-semibold text-gray-700 dark:text-gray-200">
+            Loading Your Details...
+          </h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <p className="text-lg text-red-600 dark:text-red-400 mb-4">{error}</p>
+              <button
+                onClick={loadIncidents}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Welcome back, {user?.name}</h1>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-2">Here's what's happening with your support tickets today</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                Welcome back, {user?.name}
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-2">
+                Here's what's happening with your support tickets today
+              </p>
+            </div>
+            <button
+              onClick={loadIncidents}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <RefreshCw className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Stats */}
+        {/* Dynamic Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          {stats.map((stat) => (
+          {statsData.map((stat) => (
             <div key={stat.name} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300">{stat.name}</p>
                   <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
                 </div>
-                <div className={`text-xs sm:text-sm ${stat.changeType === 'increase' ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                <div className={`text-xs sm:text-sm ${
+                  stat.changeType === 'increase' ? 'text-green-600 dark:text-green-400' : 
+                  stat.changeType === 'normal' ? 'text-blue-600 dark:text-blue-400' :
+                  'text-gray-600 dark:text-gray-400'
+                }`}>
                   {stat.change}
                 </div>
               </div>
@@ -164,43 +373,66 @@ const SupportHome: React.FC = () => {
           ))}
         </div>
 
-        {/* Recent Tickets */}
+        {/* Recent Incidents */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Tickets</h3>
-          <div className="space-y-4">
-            {[
-              { id: 'INC-2024-015', title: 'Email server downtime', priority: 'high', time: '2 min ago' },
-              { id: 'INC-2024-014', title: 'Software installation request', priority: 'medium', time: '1 hour ago' },
-              { id: 'INC-2024-013', title: 'Password reset assistance', priority: 'low', time: '3 hours ago' },
-            ].map((ticket) => (
-              <div key={ticket.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0 space-y-2 sm:space-y-0">
-                <div className="flex-1">
-                  <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">{ticket.title}</p>
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{ticket.id} • {ticket.time}</p>
-                </div>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium self-start sm:self-center ${
-                  ticket.priority === 'high' ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300' :
-                  ticket.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300' :
-                  'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'
-                }`}>
-                  {ticket.priority}
-                </span>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+              Recent Incidents ({incidents.length})
+            </h3>
+            <Link
+              to="/support/tickets"
+              className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              View all
+            </Link>
           </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const SupportSettings: React.FC = () => {
-  return (
-    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6 sm:mb-8">Settings</h1>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Support team settings will be available here.</p>
+          
+          {incidents.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 dark:text-gray-400">No incidents found</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {incidents.slice(0, 3).map((incident) => (
+                <div key={incident.IncidentID} className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0 space-y-2 sm:space-y-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white truncate">
+                      {incident.Title || incident.Summary || 'Untitled Incident'}
+                    </p>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                        {incident.IncidentID}
+                      </p>
+                      <span className="text-gray-300 dark:text-gray-600">•</span>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                        {formatDate(incident.ReportedOn)}
+                      </p>
+                      {incident.Department && (
+                        <>
+                          <span className="text-gray-300 dark:text-gray-600">•</span>
+                          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                            {incident.Department}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {incident.Status && (
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(incident.Status)}`}>
+                        {incident.Status}
+                      </span>
+                    )}
+                    {incident.Severity && (
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(incident.Severity)}`}>
+                        {incident.Severity}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
