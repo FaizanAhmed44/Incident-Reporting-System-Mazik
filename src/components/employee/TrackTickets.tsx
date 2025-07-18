@@ -11,52 +11,35 @@ import {
   User,
   Loader2,
 } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext"; // Import the useAuth hook
-import { getUserTickets } from "../../api/incidentApi"; // Import our new API function
+import { useAuth } from "../../contexts/AuthContext";
+import { getUserTickets } from "../../api/incidentApi";
 import { useNavigate } from 'react-router-dom';
 
-// The interface for how our component USES a ticket.
-// This is our clean, internal format.
-// interface Ticket {
-//   id: string;
-//   title: string;
-//   category: string;
-//   status: "new" | "accepted" | "in-progress" | "resolved" | "rejected";
-//   priority: "low" | "medium" | "high";
-//   createdAt: string;
-//   updatedAt: string;
-//   assignedTeam: string;
-//   assignedAgent?: string;
-//   assignedResolverName?: string;
-// }
 interface Ticket {
   id: string;
   title: string;
-  description?: string; // Optional description
+  description?: string;
   category: string;
   status: "new" | "accepted" | "in-progress" | "resolved" | "rejected";
   severity: "low" | "medium" | "high";
   reportedOn: string;
   assignedTeam: string;
   assignedResolverName?: string;
-  assignedResolverEmail?: string; // Optional resolver email
-  descriptionSummary: string
+  assignedResolverEmail?: string;
+  descriptionSummary: string;
 }
 
 const TrackTickets: React.FC = () => {
-  // --- STATE MANAGEMENT for live data ---
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  // State for UI controls
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [filterType, setFilterType] = useState("title"); // Add filter type state
+  const [filterType, setFilterType] = useState("title");
 
-  const { user } = useAuth(); // Get the logged-in user from context
+  const { user } = useAuth();
 
-  // --- DATA FETCHING with useEffect ---
   useEffect(() => {
     const fetchTickets = async () => {
       if (!user) {
@@ -77,28 +60,18 @@ const TrackTickets: React.FC = () => {
             .replace(" ", "-") as Ticket["status"],
           severity: apiTicket.severity.toLowerCase() as Ticket["severity"],
           reportedOn: apiTicket.reportedOn,
-          //updatedAt: apiTicket.lastUpdated,
           assignedTeam: apiTicket.category,
-          assignedResolverName: apiTicket.resolverName || "Unassigned", // Map resolver name if available
-          assignedResolverEmail: apiTicket.resolverEmail || "", // Map resolver email if available\
-          descriptionSummary: apiTicket.descriptionSummary
-}));
-        // const mappedTickets: Ticket[] = response.tickets.map((apiTicket) => ({
-        //   id: apiTicket.incidentID,
-        //   title: apiTicket.title || apiTicket.description,
-        //   category: apiTicket.category,
-        //   status: apiTicket.status
-        //     .toLowerCase()
-        //     .replace(" ", "-") as Ticket["status"],
-        //   priority: "medium",
-        //   createdAt: apiTicket.lastUpdated,
-        //   updatedAt: apiTicket.lastUpdated,
-        //   assignedTeam: apiTicket.category,
-        //   assignedAgent: "Unassigned",
-        //   assignedResolverName: "Unassigned", // Map resolver name if available
-        // }));
+          assignedResolverName: apiTicket.resolverName || "Unassigned",
+          assignedResolverEmail: apiTicket.resolverEmail || "",
+          descriptionSummary: apiTicket.descriptionSummary,
+        }));
 
-        setTickets(mappedTickets);
+        // Sort tickets by reportedOn in descending order (newest first)
+        const sortedTickets = mappedTickets.sort((a, b) => {
+          return new Date(b.reportedOn).getTime() - new Date(a.reportedOn).getTime();
+        });
+
+        setTickets(sortedTickets);
       } catch (err: any) {
         setError(
           err.message || "An unknown error occurred while fetching tickets."
@@ -109,9 +82,8 @@ const TrackTickets: React.FC = () => {
     };
 
     fetchTickets();
-  }, [user]); // This effect runs once when the component loads, or if the user logs in/out.
+  }, [user]);
 
-  // --- FILTERING LOGIC (no changes needed here) ---
   const filteredTickets = tickets.filter((ticket) => {
     const search = searchTerm.toLowerCase();
     let matchesSearch = false;
@@ -129,9 +101,8 @@ const TrackTickets: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // --- HELPER FUNCTIONS & COMPONENTS (no changes needed here) ---
   const getStatusIcon = (status: string) => {
-    /* ... same as before ... */ switch (status) {
+    switch (status) {
       case "new":
         return <Clock className="h-3 w-3 sm:h-4 sm:w-4" />;
       case "accepted":
@@ -146,8 +117,9 @@ const TrackTickets: React.FC = () => {
         return <Clock className="h-3 w-3 sm:h-4 sm:w-4" />;
     }
   };
+
   const getStatusColor = (status: string) => {
-    /* ... same as before ... */ switch (status) {
+    switch (status) {
       case "new":
         return "bg-blue-100 text-blue-800 border-blue-200";
       case "accepted":
@@ -162,8 +134,9 @@ const TrackTickets: React.FC = () => {
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
+
   const getPriorityColor = (priority: string) => {
-    /* ... same as before ... */ switch (priority) {
+    switch (priority) {
       case "high":
         return "bg-red-100 text-red-800 border-red-200";
       case "medium":
@@ -174,8 +147,9 @@ const TrackTickets: React.FC = () => {
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
+
   const ProgressIndicator: React.FC<{ status: string }> = ({ status }) => {
-    /* ... same as before ... */ const stages = [
+    const stages = [
       { key: "new", label: "New", icon: AlertCircle },
       { key: "accepted", label: "Accepted", icon: CheckCircle },
       { key: "in-progress", label: "In Progress", icon: Clock },
@@ -184,16 +158,13 @@ const TrackTickets: React.FC = () => {
     const currentIndex = stages.findIndex((stage) => stage.key === status);
     return (
       <div className="flex items-center justify-between mb-4 sm:mb-6 bg-gray-50 dark:bg-gray-700 rounded-xl p-3 sm:p-4">
-        {" "}
         {stages.map((stage, index) => {
           const Icon = stage.icon;
           const isActive = index <= currentIndex;
           const isCurrent = index === currentIndex;
           return (
             <div key={stage.key} className="flex items-center flex-1">
-              {" "}
               <div className="flex flex-col items-center">
-                {" "}
                 <div
                   className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
                     isActive
@@ -203,18 +174,16 @@ const TrackTickets: React.FC = () => {
                       : "bg-gray-200 text-gray-400"
                   }`}
                 >
-                  {" "}
-                  <Icon className="h-3 w-3 sm:h-5 sm:w-5" />{" "}
-                </div>{" "}
+                  <Icon className="h-3 w-3 sm:h-5 sm:w-5" />
+                </div>
                 <span
                   className={`text-xs mt-1 sm:mt-2 font-medium ${
                     isActive ? "text-gray-400" : "text-gray-400"
                   }`}
                 >
-                  {" "}
-                  {stage.label}{" "}
-                </span>{" "}
-              </div>{" "}
+                  {stage.label}
+                </span>
+              </div>
               {index < stages.length - 1 && (
                 <div
                   className={`flex-1 h-0.5 sm:h-1 mx-2 sm:mx-4 rounded transition-all duration-300 ${
@@ -223,15 +192,14 @@ const TrackTickets: React.FC = () => {
                       : "bg-gray-200 dark:bg-gray-600"
                   }`}
                 />
-              )}{" "}
+              )}
             </div>
           );
-        })}{" "}
+        })}
       </div>
     );
   };
 
-  // --- CONDITIONAL RENDERING for loading and error states ---
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
@@ -259,12 +227,10 @@ const TrackTickets: React.FC = () => {
     );
   }
 
-  // --- RENDER the main UI with live data ---
   return (
     <div className="flex-1 overflow-auto">
       <div className="min-h-full bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 p-4 sm:p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
-          {/* Header */}
           <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2">
               Track My Tickets
@@ -274,7 +240,6 @@ const TrackTickets: React.FC = () => {
             </p>
           </div>
 
-          {/* Search and Filter */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-4 sm:p-6 mb-6 sm:mb-8">
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1 relative">
@@ -314,7 +279,6 @@ const TrackTickets: React.FC = () => {
             </div>
           </div>
 
-          {/* Tickets List */}
           <div className="space-y-4 sm:space-y-6">
             {filteredTickets.length > 0 ? (
               filteredTickets.map((ticket) => (
@@ -322,7 +286,6 @@ const TrackTickets: React.FC = () => {
                   key={ticket.id}
                   className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden"
                 >
-                  {/* All the JSX for a ticket card remains the same, it will now use the live mapped data */}
                   <div className="p-4 sm:p-6">
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4 sm:mb-6">
                       <div className="flex-1">
@@ -341,97 +304,83 @@ const TrackTickets: React.FC = () => {
                                 ticket.severity
                               )}`}
                             >
-                              {" "}
-                              {ticket.severity.toUpperCase()}{" "}
+                              {ticket.severity.toUpperCase()}
                             </span>
                             <span
                               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(
                                 ticket.status
                               )}`}
                             >
-                              {" "}
-                              {getStatusIcon(ticket.status)}{" "}
+                              {getStatusIcon(ticket.status)}
                               <span className="ml-1">
                                 {ticket.status.charAt(0).toUpperCase() +
                                   ticket.status.slice(1).replace("-", " ")}
-                              </span>{" "}
+                              </span>
                             </span>
                           </div>
                         </div>
-                      </div>                      
-                      <button 
-                      onClick={() => navigate(`/employee/ticket/INC-2024-001`, { state: { ticket } }) }
-                      className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg text-sm sm:text-base"
-                    >
-                      <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span>View Details</span>
-                    </button>
+                      </div>
+                      <button
+                        onClick={() => navigate(`/employee/ticket/${ticket.id}`, { state: { ticket } })}
+                        className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg text-sm sm:text-base"
+                      >
+                        <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span>View Details</span>
+                      </button>
                     </div>
                     <ProgressIndicator status={ticket.status} />
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
                       <div className="flex items-center space-x-2 sm:space-x-3">
-                        {" "}
                         <div className="bg-blue-100 dark:bg-blue-900/50 p-1.5 sm:p-2 rounded-lg">
-                          {" "}
-                          <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />{" "}
-                        </div>{" "}
+                          <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                        </div>
                         <div>
-                          {" "}
                           <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                             Category
-                          </p>{" "}
+                          </p>
                           <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
                             {ticket.category}
-                          </p>{" "}
-                        </div>{" "}
+                          </p>
+                        </div>
                       </div>
                       <div className="flex items-center space-x-2 sm:space-x-3">
-                        {" "}
                         <div className="bg-green-100 dark:bg-green-900/50 p-1.5 sm:p-2 rounded-lg">
-                          {" "}
-                          <User className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />{" "}
-                        </div>{" "}
+                          <User className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                        </div>
                         <div>
-                          {" "}
                           <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                             Assigned Team
-                          </p>{" "}
+                          </p>
                           <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
                             {ticket.assignedTeam}
-                          </p>{" "}
-                        </div>{" "}
+                          </p>
+                        </div>
                       </div>
                       <div className="flex items-center space-x-2 sm:space-x-3">
-                        {" "}
                         <div className="bg-purple-100 dark:bg-purple-900/50 p-1.5 sm:p-2 rounded-lg">
-                          {" "}
-                          <User className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />{" "}
-                        </div>{" "}
+                          <User className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
+                        </div>
                         <div>
-                          {" "}
                           <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                             Assigned Member
-                          </p>{" "}
+                          </p>
                           <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
                             {ticket.assignedResolverName || "Unassigned"}
-                          </p>{" "}
-                        </div>{" "}
+                          </p>
+                        </div>
                       </div>
                       <div className="flex items-center space-x-2 sm:space-x-3">
-                        {" "}
                         <div className="bg-orange-100 dark:bg-orange-900/50 p-1.5 sm:p-2 rounded-lg">
-                          {" "}
-                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />{" "}
-                        </div>{" "}
+                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
+                        </div>
                         <div>
-                          {" "}
                           <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                             Last Updated
-                          </p>{" "}
+                          </p>
                           <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
                             {new Date(ticket.reportedOn).toLocaleDateString()}
-                          </p>{" "}
-                        </div>{" "}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -439,25 +388,24 @@ const TrackTickets: React.FC = () => {
               ))
             ) : (
               <div className="text-center py-12 sm:py-16">
-                {" "}
                 <div className="flex justify-center mb-4 sm:mb-6">
-                  {" "}
                   <div className="bg-gray-100 dark:bg-gray-700 p-4 sm:p-6 rounded-full">
-                    {" "}
-                    <Search className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 dark:text-gray-500" />{" "}
-                  </div>{" "}
-                </div>{" "}
+                    <Search className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 dark:text-gray-500" />
+                  </div>
+                </div>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   No tickets found
-                </h3>{" "}
+                </h3>
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mb-4 sm:mb-6">
                   It looks like you haven't submitted any tickets yet, or none
                   match your current search.
-                </p>{" "}
-                <button className="px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm sm:text-base">
-                  {" "}
-                  Submit New Ticket{" "}
-                </button>{" "}
+                </p>
+                <button
+                  onClick={() => navigate('/employee/submit')}
+                  className="px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                >
+                  Submit New Ticket
+                </button>
               </div>
             )}
           </div>

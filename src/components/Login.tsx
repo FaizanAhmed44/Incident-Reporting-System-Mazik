@@ -33,31 +33,7 @@ const Login: React.FC = () => {
     }
   };
 
-  const quickLogin = (type: string) => {
-    setIsLoading(true);
-    setError('');
-    const credentials = {
-      employee: { email: 'employee@mazikcloud.com', password: 'encrypted_password_1' },
-      support: { email: 'ethan@mazikcloud.com', password: 'encrypted_password_5' },
-      admin: { email: 'admin@mazikcloud.com', password: 'encrypted_password_2' },
-    };
-
-    const cred = credentials[type as keyof typeof credentials];
-    login(cred.email, cred.password)
-      .then((user) => {
-        console.log(`Quick login successful for ${type}, user:`, user); // Debugging log
-        if (user?.role) {
-          navigate(`/${user.role}`, { replace: true });
-        } else {
-          throw new Error('User role not found after quick login');
-        }
-      })
-      .catch((error: any) => {
-        setError(error.message || 'Demo login failed.');
-        console.error(`Quick login failed for ${type}:`, error); // Debugging log
-      })
-      .finally(() => setIsLoading(false));
-  };
+ 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 flex flex-col lg:flex-row transition-colors duration-200">
