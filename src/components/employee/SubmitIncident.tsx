@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, AlertCircle, Zap, Clock, Users, FileText,Info } from 'lucide-react';
+import { Send, AlertCircle, Zap, Clock, Users, FileText } from 'lucide-react';
 import { submitIncident } from '../../api/incidentApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { X } from "lucide-react";
+import CategoryDisplay from '../ui/CategoryDisplay';
 
 const SubmitIncident: React.FC = () => {
   const navigate = useNavigate();
@@ -12,66 +14,7 @@ const SubmitIncident: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const categories = [
-    { 
-      value: 'it-support', 
-      label: 'IT Support',
-      description: 'Hardware, software, network issues',
-      icon: '💻',
-      color: 'bg-blue-50 border-blue-200 text-blue-700'
-    },
-    { 
-      value: 'hr', 
-      label: 'Human Resources',
-      description: 'Policy, benefits, workplace issues',
-      icon: '👥',
-      color: 'bg-green-50 border-green-200 text-green-700'
-    },
-    { 
-      value: 'facilities', 
-      label: 'Facilities',
-      description: 'Building, equipment, maintenance',
-      icon: '🏢',
-      color: 'bg-purple-50 border-purple-200 text-purple-700'
-    },
-    { 
-      value: 'security', 
-      label: 'Security',
-      description: 'Unauthorized access, theft, threats',
-      icon: '🔒',
-      color: 'bg-red-50 border-red-200 text-red-700'
-    },
-    { 
-      value: 'finance', 
-      label: 'Finance',
-      description: 'Budget issues, reimbursements, fraud',
-      icon: '💰',
-      color: 'bg-yellow-50 border-yellow-200 text-yellow-700'
-    },
-    { 
-      value: 'health-safety', 
-      label: 'Health & Safety',
-      description: 'Injuries, hazards, compliance concerns',
-      icon: '🩺',
-      color: 'bg-pink-50 border-pink-200 text-pink-700'
-    },
-    { 
-      value: 'legal', 
-      label: 'Legal',
-      description: 'Compliance, legal risks, disputes',
-      icon: '⚖️',
-      color: 'bg-gray-50 border-gray-200 text-gray-700'
-    },
-    { 
-      value: 'other', 
-      label: 'Other',
-      description: 'Anything not covered above',
-      icon: '❓',
-      color: 'bg-indigo-50 border-indigo-200 text-indigo-700'
-    }
-  ];
-  
+  const [showPopup, setShowPopup] = useState(false);  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,8 +23,18 @@ const SubmitIncident: React.FC = () => {
 
     try {
       const response = await submitIncident({ description: formData.description });
-      console.log('Incident submitted successfully:', response); // Debugging log
-      navigate('/employee/incident-confirmation', {
+      console.log("Incident submitted successfully:", response);
+
+      if (
+        response.staff_assignment?.assigned_department === "Unclassified" ||
+        response.classification?.category === "Unclassified"
+      ) {
+        setShowPopup(true);
+        setIsSubmitting(false);
+        return;
+      }
+
+      navigate("/employee/incident-confirmation", {
         state: {
           formData: {
             description: formData.description,
@@ -95,12 +48,55 @@ const SubmitIncident: React.FC = () => {
         },
       });
     } catch (err: any) {
-      setError(err.message || 'Failed to submit incident. Please try again.');
-      console.error('Submit incident error:', err); // Debugging log
+      setError(err.message || "Failed to submit incident. Please try again.");
+      console.error("Submit incident error:", err);
     } finally {
-      setIsSubmitting(false);
+      if (!showPopup) {
+        setIsSubmitting(false);
+      }
     }
   };
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    setIsSubmitting(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      handleClosePopup();
+    }
+  };
+
+
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setIsSubmitting(true);
+  //   setError(null);
+
+  //   try {
+  //     const response = await submitIncident({ description: formData.description });
+  //     console.log('Incident submitted successfully:', response); 
+  //     navigate('/employee/incident-confirmation', {
+  //       state: {
+  //         formData: {
+  //           description: formData.description,
+  //           reportedBy: {
+  //             email: user?.email,
+  //             name: user?.name,
+  //             id: user?.id,
+  //           },
+  //           apiResponse: response,
+  //         },
+  //       },
+  //     });
+  //   } catch (err: any) {
+  //     setError(err.message || 'Failed to submit incident. Please try again.');
+  //     console.error('Submit incident error:', err); // Debugging log
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setFormData((prev) => ({
@@ -174,32 +170,9 @@ const SubmitIncident: React.FC = () => {
                 </div>
               </div>
 
-{/* Category Display (Horizontally Scrollable, No Selection) */}
-<div>
-  {/* <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-    Available Category <span className="text-red-500"><Info /></span>
-  </label> */}
-  <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 space-x-1">
-  <span>Available Category</span>
-  <Info className="h-3 w-3 text-primary" />
-</label>
+           
 
-  <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-    {categories.map(category => (
-      <div
-        key={category.value}
-        className={`relative min-w-[220px] sm:min-w-[240px] rounded-xl border-2 p-3 sm:p-4 transition-all duration-200 hover:shadow-md bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500`}
-      >
-        <div className="text-center">
-          <div className="text-xl sm:text-2xl mb-2">{category.icon}</div>
-          <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-1">{category.label}</h3>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{category.description}</p>
-        </div>
-      </div>
-    ))}
-  </div>
-</div>
-
+              <CategoryDisplay></CategoryDisplay>
 
               {/* AI Features Info */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 sm:p-6">
@@ -260,8 +233,56 @@ const SubmitIncident: React.FC = () => {
               </div>
             </form>
           </div>
+
+          {showPopup && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+              onKeyDown={handleKeyDown}
+              tabIndex={0}
+            >
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 transform transition-all duration-300 scale-100 animate-fade-in">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
+                    Unable to Classify Incident
+                  </h2>
+                  <button
+                    onClick={handleClosePopup}
+                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    aria-label="Close popup"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mb-6">
+                  Please provide a more appropriate description to help us classify your ticket.
+                </p>
+                <div className="text-center">
+                  <button
+                    onClick={handleClosePopup}
+                    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200 text-sm sm:text-base font-semibold"
+                    autoFocus
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+
+        <style>
+          {`
+            @keyframes fade-in {
+              0% { opacity: 0; transform: scale(0.95); }
+              100% { opacity: 1; transform: scale(1); }
+            }
+            .animate-fade-in {
+              animation: fade-in 0.3s ease-out;
+            }
+          `}
+        </style>
+        </div>
+      
     </div>
   );
 };
