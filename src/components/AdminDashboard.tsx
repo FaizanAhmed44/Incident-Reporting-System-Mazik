@@ -7,6 +7,8 @@ import StaffManagement from './admin/StaffManagement';
 import TicketsManagement from './admin/TicketManagement';
 import { get_all_data, ApiResponse } from '../api/dashboard_admin'; // Incident
 import { CustomLoader } from './ui/CustomLoader';
+import mazikLogo from '../assets/mazik_logo_png.png';
+
 
 
 // Utility function to calculate time difference in hours
@@ -57,16 +59,9 @@ const AdminDashboard: React.FC = () => {
 
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}>
-        <div className="flex items-center justify-between p-4 lg:p-6">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-600 p-2 rounded-lg">
-              <User className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Admin Portal</h1>
-              <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-300">Administrator</p>
-            </div>
-          </div>
+        
+      <div className="rounded-lg p-2 mt-4 ml-4 mr-2 flex items-center justify-between">
+          <img src={mazikLogo} alt="Mazik Logo" className="h-12" />
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -74,6 +69,15 @@ const AdminDashboard: React.FC = () => {
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        <div className="flex items-center justify-between pl-6 pb-4 lg:pl-6">        
+          <div className="flex items-center space-x-3">  
+          <div>
+            <h1 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Admin Portal</h1>
+            <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-300">Administrator</p>
+            </div>
+          </div>       
+        </div>        
 
         <nav className="flex-1 px-4 space-y-2">
           {navigation.map((item) => {
@@ -492,7 +496,7 @@ const AdminHome: React.FC = () => {
           
   <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
   <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">Tickets by Severity</h3>
-  <div className="flex flex-col items-center">
+  <div className="flex flex-col items-center ">
     <div className="relative w-48 h-48 sm:w-64 sm:h-64">
       <svg className="w-full h-full" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="40" fill="#1F2937" stroke="#4B5563" strokeWidth="5" />

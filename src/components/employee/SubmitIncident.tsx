@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Send, AlertCircle, Zap, Clock, Users, FileText } from 'lucide-react';
 import { submitIncident } from '../../api/incidentApi';
@@ -14,7 +14,40 @@ const SubmitIncident: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attachment, setAttachment] = useState<File | null>(null);
   const [showPopup, setShowPopup] = useState(false);  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        setAttachment(null);
+        setError("Please select a valid image file.");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setAttachment(null);
+        setError("File size exceeds 5MB limit.");
+        return;
+      }
+      setAttachment(file);
+      setError(null);
+    } else {
+      setAttachment(null);
+      setError(null);
+    }
+  };
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+  const handleRemoveAttachment = () => {
+    setAttachment(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; // Reset file input
+    }
+    setError(null); // Clear any related errors
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,36 +100,6 @@ const SubmitIncident: React.FC = () => {
       handleClosePopup();
     }
   };
-
-
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   setIsSubmitting(true);
-  //   setError(null);
-
-  //   try {
-  //     const response = await submitIncident({ description: formData.description });
-  //     console.log('Incident submitted successfully:', response); 
-  //     navigate('/employee/incident-confirmation', {
-  //       state: {
-  //         formData: {
-  //           description: formData.description,
-  //           reportedBy: {
-  //             email: user?.email,
-  //             name: user?.name,
-  //             id: user?.id,
-  //           },
-  //           apiResponse: response,
-  //         },
-  //       },
-  //     });
-  //   } catch (err: any) {
-  //     setError(err.message || 'Failed to submit incident. Please try again.');
-  //     console.error('Submit incident error:', err); // Debugging log
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setFormData((prev) => ({

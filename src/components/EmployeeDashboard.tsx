@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Plus, FileText, LogOut, User, Home, Menu, X, Moon, Sun,XCircle,Loader2 } from 'lucide-react';
+import { Plus, FileText, LogOut, User, Home, Menu, X, Moon, Sun,XCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SubmitIncident from './employee/SubmitIncident';
@@ -10,6 +10,8 @@ import TicketConfirmation from './employee/TicketConfirmation';
 import { getUserTickets } from "../api/incidentApi"; 
 import IncidentConfirmation from './employee/IncidentConfirmation';
 import { CustomLoader } from './ui/CustomLoader';
+import mazikLogo from '../assets/mazik_logo_png.png';
+
 
 
 interface Ticket {
@@ -60,22 +62,24 @@ const EmployeeDashboard: React.FC = () => {
 
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}>
-        <div className="flex items-center justify-between p-4 lg:p-6">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-600 p-2 rounded-lg">
-              <User className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Incident Portal</h1>
-              <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-300">Employee</p>
-            </div>
-          </div>
+      
+        <div className="rounded-lg p-2 mt-4 ml-4 mr-2 flex items-center justify-between">
+          <img src={mazikLogo} alt="Mazik Logo" className="h-12" />
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <X className="h-5 w-5" />
           </button>
+        </div>
+
+        <div className="flex items-center justify-between pl-6 pb-4 lg:pl-6">        
+          <div className="flex items-center space-x-3">  
+          <div>
+            <h1 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Incident Portal</h1>
+            <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-300">Employee</p>
+            </div>
+          </div>       
         </div>
 
         <nav className="flex-1 px-4 space-y-2">
