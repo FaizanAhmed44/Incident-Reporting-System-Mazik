@@ -19,7 +19,7 @@ const Login: React.FC = () => {
     setError('');
     try {
       const user = await login(email, password);
-      console.log('Login successful, user:', user); // Debugging log
+      console.log('Login successful, user:', user);
       if (user?.role) {
         navigate(`/${user.role}`, { replace: true });
       } else {
