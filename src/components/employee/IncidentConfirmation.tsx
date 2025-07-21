@@ -564,6 +564,7 @@ interface LocationState {
       staff_assignment: {
         assigned_staff_email: string;
         assigned_staff_name: string;
+        assigned_staff_id: string;
         assigned_department: string;
         staff_skillset: string;
       };
@@ -611,7 +612,7 @@ const IncidentConfirmation: React.FC = () => {
     const { apiResponse, description, reportedBy } = state.formData;
 
     const data: ProcessedData = {
-      staffId: `EMP-${Date.now().toString().slice(-5)}`,
+      staffId: apiResponse.staff_assignment.assigned_staff_id,
       staffName: apiResponse.staff_assignment.assigned_staff_name,
       email: apiResponse.classification.email,
       title: apiResponse.classification.title,
@@ -701,7 +702,7 @@ const IncidentConfirmation: React.FC = () => {
         Description: processedData.description,
         Status: "New",
         DepartmentType: processedData.department,
-        AssignedResolverGUID: "9a451891-e322-411b-9fb1-f93264bc29bb",
+        AssignedResolverGUID: processedData.staffId,
         ReportedByGUID: processedData.reportedById,
         ResolverEmail: processedData.staffEmail,
         ReporterEmail: processedData.reportedByEmail,

@@ -11,87 +11,6 @@ const TicketDetails: React.FC = () => {
   const tickets = location.state?.ticket;
 
   if (!tickets) {
-    return <div>No ticket data found.</div>;
-  }
-  // Mock ticket data - in real app, this would come from API based on ticketId
-  const getTicketData = (id: string) => {
-    const tickets = {
-      'INC-2024-001': {
-        id: 'INC-2024-001',
-        title: 'Laptop performance issue affecting productivity',
-        description: 'My laptop has been running very slowly for the past few days. Applications take a long time to load, and the system frequently freezes during important tasks. This is significantly impacting my ability to complete work on time.',
-        category: 'IT Support',
-        status: 'in-progress',
-        priority: 'medium',
-        createdAt: '2024-01-15T09:30:00Z',
-        updatedAt: '2024-01-16T14:20:00Z',
-        assignedTeam: 'IT Support Team',
-        assignedAgent: 'Sarah Johnson',
-        submittedBy: {
-          name: 'John Employee',
-          email: 'john.employee@company.com',
-          department: 'Sales'
-        },
-        timeline: [
-          { id: 1, action: 'Ticket created', user: 'John Employee', timestamp: '2024-01-15T09:30:00Z' },
-          { id: 2, action: 'Assigned to IT Support Team', user: 'System', timestamp: '2024-01-15T09:31:00Z' },
-          { id: 3, action: 'Accepted by Sarah Johnson', user: 'Sarah Johnson', timestamp: '2024-01-15T10:15:00Z' },
-          { id: 4, action: 'Status changed to In Progress', user: 'Sarah Johnson', timestamp: '2024-01-16T14:20:00Z' }
-        ]
-      },
-      'INC-2024-002': {
-        id: 'INC-2024-002',
-        title: 'Office temperature too cold in conference room',
-        description: 'The conference room on the 3rd floor is extremely cold, making it uncomfortable for meetings. The temperature seems to be much lower than other areas of the office.',
-        category: 'Facilities',
-        status: 'resolved',
-        priority: 'low',
-        createdAt: '2024-01-10T11:00:00Z',
-        updatedAt: '2024-01-14T16:30:00Z',
-        assignedTeam: 'Facilities Management',
-        assignedAgent: 'Mike Chen',
-        submittedBy: {
-          name: 'John Employee',
-          email: 'john.employee@company.com',
-          department: 'Sales'
-        },
-        timeline: [
-          { id: 1, action: 'Ticket created', user: 'John Employee', timestamp: '2024-01-10T11:00:00Z' },
-          { id: 2, action: 'Assigned to Facilities Management', user: 'System', timestamp: '2024-01-10T11:01:00Z' },
-          { id: 3, action: 'Accepted by Mike Chen', user: 'Mike Chen', timestamp: '2024-01-10T14:30:00Z' },
-          { id: 4, action: 'HVAC system adjusted', user: 'Mike Chen', timestamp: '2024-01-14T15:00:00Z' },
-          { id: 5, action: 'Ticket resolved', user: 'Mike Chen', timestamp: '2024-01-14T16:30:00Z' }
-        ]
-      },
-      'INC-2024-003': {
-        id: 'INC-2024-003',
-        title: 'Password reset request for network access',
-        description: 'I forgot my network password and cannot access shared drives or company resources. I need assistance resetting my password.',
-        category: 'IT Support',
-        status: 'accepted',
-        priority: 'high',
-        createdAt: '2024-01-12T08:45:00Z',
-        updatedAt: '2024-01-12T09:15:00Z',
-        assignedTeam: 'IT Support Team',
-        assignedAgent: 'Alex Rivera',
-        submittedBy: {
-          name: 'John Employee',
-          email: 'john.employee@company.com',
-          department: 'Sales'
-        },
-        timeline: [
-          { id: 1, action: 'Ticket created', user: 'John Employee', timestamp: '2024-01-12T08:45:00Z' },
-          { id: 2, action: 'Assigned to IT Support Team', user: 'System', timestamp: '2024-01-12T08:46:00Z' },
-          { id: 3, action: 'Accepted by Alex Rivera', user: 'Alex Rivera', timestamp: '2024-01-12T09:15:00Z' }
-        ]
-      }
-    };
-    return tickets[id as keyof typeof tickets];
-  };
-
-  const ticket = getTicketData(ticketId || '');
-
-  if (!ticket) {
     return (
       <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -290,7 +209,7 @@ const TicketDetails: React.FC = () => {
                       <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">{tickets.assignedTeam}</p>
                     </div>
                   </div>
-                  {ticket.assignedAgent && (
+                  {tickets.assignedResolverName && (
                     <div className="flex items-center space-x-3">
                       <div className="bg-green-100 dark:bg-green-900/50 p-2 rounded-lg">
                         <User className="h-4 w-4 text-green-600" />
@@ -313,29 +232,12 @@ const TicketDetails: React.FC = () => {
                 </div>
               </div>
 
-              {/* Timeline */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-4 sm:p-6">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">Activity Timeline</h2>
-                <div className="space-y-4">
-                  {ticket.timeline.map((event) => (
-                    <div key={event.id} className="flex items-start space-x-3">
-                      <div className="bg-blue-100 dark:bg-blue-900/50 p-1 rounded-full mt-1">
-                        <div className="h-3 w-3 bg-blue-600 rounded-full"></div>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{event.action}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">by {event.user}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{new Date(event.timestamp).toLocaleString()}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+             
             </div>
 
             {/* Chat Section */}
             <div>
-              <IncidentChat ticketId={ticket.id} />
+              <IncidentChat ticketId={tickets.id} />
             </div>
           </div>
         </div>
