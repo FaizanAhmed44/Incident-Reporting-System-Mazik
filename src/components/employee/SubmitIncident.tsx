@@ -1,10 +1,37 @@
-import React, { useState,useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, AlertCircle, Zap, Clock, Users, FileText } from 'lucide-react';
+import { Send, AlertCircle, Zap, Clock, Users, FileText, Image, X } from 'lucide-react';
 import { submitIncident } from '../../api/incidentApi';
 import { useAuth } from '../../contexts/AuthContext';
-import { X } from "lucide-react";
 import CategoryDisplay from '../ui/CategoryDisplay';
+
+interface LocationState {
+  formData: {
+    description: string;
+    reportedBy: {
+      email: string;
+      name: string;
+      id: string;
+    };
+    apiResponse: {
+      classification: {
+        category: string;
+        severity: string;
+        title: string;
+        summary: string;
+        email: string;
+      };
+      staff_assignment: {
+        assigned_staff_email: string;
+        assigned_staff_name: string;
+        assigned_staff_id: string;
+        assigned_department: string;
+        staff_skillset: string;
+      };
+    };
+    attachment: File | null;
+  };
+}
 
 const SubmitIncident: React.FC = () => {
   const navigate = useNavigate();
@@ -15,7 +42,7 @@ const SubmitIncident: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attachment, setAttachment] = useState<File | null>(null);
-  const [showPopup, setShowPopup] = useState(false);  
+  const [showPopup, setShowPopup] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,15 +65,17 @@ const SubmitIncident: React.FC = () => {
       setError(null);
     }
   };
+
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
+
   const handleRemoveAttachment = () => {
     setAttachment(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // Reset file input
+      fileInputRef.current.value = "";
     }
-    setError(null); // Clear any related errors
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,6 +106,7 @@ const SubmitIncident: React.FC = () => {
               id: user?.id,
             },
             apiResponse: response,
+            attachment: attachment, // Pass the selected image
           },
         },
       });
@@ -148,34 +178,66 @@ const SubmitIncident: React.FC = () => {
                 </div>
               )}
 
-              {/* Description Field */}
+              {/* Description Field with Attachment Icon */}
               <div>
                 <label htmlFor="description" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                   Description <span className="text-red-500">*</span>
                 </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  rows={6}
-                  required
-                  value={formData.description}
-                  onChange={handleChange}
-                  className="w-full px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="Please provide detailed information about the issue including:
+                <div className="relative">
+                  <textarea
+                    id="description"
+                    name="description"
+                    rows={6}
+                    required
+                    value={formData.description}
+                    onChange={handleChange}
+                    className="w-full px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                    placeholder="Please provide detailed information about the issue including:
 • What happened?
 • When did it occur?
 • Steps to reproduce
 • Error messages (if any)
 • Impact on your work"
-                />
+                  />
+                  <button
+                    type="button"
+                    onClick={triggerFileInput}
+                    className="absolute bottom-2 right-2 p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    title="Click to attach an image (max 5MB)"
+                  >
+                    <Image className="h-5 w-5" />
+                  </button>
+                  <input
+                    id="attachment"
+                    name="attachment"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    ref={fileInputRef}
+                  />
+                </div>
+                
                 <div className="mt-2 text-xs sm:text-sm text-gray-500">
                   {formData.description.length}/500 characters
                 </div>
+                {attachment && (
+                  <div className="mt-2 flex items-center text-sm text-gray-600 dark:text-gray-300">
+                    <Image className="h-4 w-4 mr-2" />
+                    <span>{attachment.name}</span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveAttachment}
+                      className="ml-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      title="Remove attachment"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
 
-           
-
-              <CategoryDisplay></CategoryDisplay>
+              <CategoryDisplay />
 
               {/* AI Features Info */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 sm:p-6">
@@ -184,7 +246,9 @@ const SubmitIncident: React.FC = () => {
                     <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-2">AI-Enhanced Processing</h3>
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-2">
+                      AI-Enhanced Processing
+                    </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                       <div className="flex items-center space-x-2">
                         <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
@@ -211,7 +275,7 @@ const SubmitIncident: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
                 <button
                   type="button"
-                  onClick={() => navigate('/employee')}
+                  onClick={() => navigate("/employee")}
                   className="flex-1 px-4 sm:px-6 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 font-medium text-sm sm:text-base"
                 >
                   Cancel
@@ -284,8 +348,7 @@ const SubmitIncident: React.FC = () => {
             }
           `}
         </style>
-        </div>
-      
+      </div>
     </div>
   );
 };

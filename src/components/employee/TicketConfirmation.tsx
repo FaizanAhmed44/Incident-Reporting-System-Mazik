@@ -27,7 +27,7 @@ interface LocationState {
     reportedByName: string;
     reportedById: string;
   };
-  confirmationUrl: string;
+  attachmentUrl: string;
 }
 
 const TicketConfirmation: React.FC = () => {
@@ -52,7 +52,7 @@ const TicketConfirmation: React.FC = () => {
     );
   }
 
-  const { processedData, ticketId: ticket, confirmationUrl } = state;
+  const { processedData, ticketId: ticket, attachmentUrl } = state;
 
   // Map category to icon and color (aligned with SubmitIncident.tsx categories)
   const categoryInfo = {
