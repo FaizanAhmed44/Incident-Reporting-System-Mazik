@@ -23,6 +23,7 @@ export interface IncidentConfirmationPayloads {
       Severity: string;
       descriptionSummary: string;
       emailDraft: string;
+      imageUrl:string|null;
     }
 };
   

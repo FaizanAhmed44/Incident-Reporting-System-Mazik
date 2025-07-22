@@ -229,7 +229,8 @@ const IncidentConfirmation: React.FC = () => {
           ResolverName: processedData.staffName,
           Severity: processedData.priority,
           descriptionSummary: processedData.summary,
-          emailDraft: processedData.email,          
+          emailDraft: processedData.email,
+          imageUrl:attachmentUrl,          
         },
       };
 
@@ -243,8 +244,7 @@ const IncidentConfirmation: React.FC = () => {
               email: processedData.reportedByEmail,
               name: processedData.reportedByName,
               id: processedData.reportedById,
-            },
-            
+            },         
           },
           ticketId,
           processedData,
