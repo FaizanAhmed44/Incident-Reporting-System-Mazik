@@ -1,6 +1,6 @@
 import React from 'react';
-import { useParams, useLocation, Link } from 'react-router-dom';
-import { CheckCircle, Clock, Users, Zap, ArrowRight, Star, Shield, Target } from 'lucide-react';
+import { useLocation, Link } from 'react-router-dom';
+import { CheckCircle, Clock, Users, Zap, ArrowRight, Shield, Target } from 'lucide-react';
 
 interface LocationState {
   formData: {
@@ -30,8 +30,7 @@ interface LocationState {
   attachmentUrl: string;
 }
 
-const TicketConfirmation: React.FC = () => {
-  const { ticketId } = useParams<{ ticketId: string }>();
+const TicketConfirmation: React.FC = () => {  
   const location = useLocation();
   const state = location.state as LocationState;
 
