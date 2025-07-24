@@ -19,6 +19,7 @@ interface UserResponse {
   Title: string;
   ReporterEmail: string;
   ReportedOn: string;
+  Attachment:string;
 }
 
 interface UpdateStatusPayload {
@@ -249,32 +250,47 @@ const TicketDetails: React.FC = () => {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Ticket Details */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Ticket Information</h2>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Description</h3>
-                  <p className="text-sm sm:text-base text-gray-900 dark:text-white leading-relaxed">
-                    {ticket.Summary || 'No description available'}
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Department</h3>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                      <Tag className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                      {ticket.Department || 'N/A'}
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Severity</h3>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(ticket.Severity)}`}>
-                      {ticket.Severity ? ticket.Severity.toUpperCase() : 'N/A'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+  <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Ticket Information</h2>
+  <div className="space-y-4">
+    <div>
+      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Description</h3>
+      <p className="text-sm sm:text-base text-gray-900 dark:text-white leading-relaxed">
+        {ticket.Summary || 'No description available'}
+      </p>
+    </div>
+    <div>
+      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Attachment</h3>
+      {ticket.Attachment!=="" ? (
+        <a
+          href={ticket.Attachment}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm sm:text-base text-blue-600 dark:text-blue-400 hover:underline break-all"
+        >
+          View Attachment
+        </a>
+      ) : (
+        <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">No attachment provided</p>
+      )}
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Department</h3>
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+          <Tag className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+          {ticket.Department || 'N/A'}
+        </span>
+      </div>
+      <div>
+        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Severity</h3>
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(ticket.Severity)}`}>
+          {ticket.Severity ? ticket.Severity.toUpperCase() : 'N/A'}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
 
             {/* Resolution Form */}
             {showResolutionForm && (
@@ -371,35 +387,35 @@ const TicketDetails: React.FC = () => {
 
             {/* Employee Information */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Reporter Information</h2>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
-                    <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600 dark:text-gray-300" />
-                  </div>
-                  <div>
-                    <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                      {ticket.ReporterName || 'N/A'}
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                      {ticket.ReporterEmail || 'N/A'}
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Department</p>
-                  <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                    {ticket.Department || 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Reported On</p>
-                  <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                    {formatDate(ticket.ReportedOn)}
-                  </p>
-                </div>
-              </div>
-            </div>
+  <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Reporter Information</h2>
+  <div className="space-y-3">
+    <div className="flex items-center space-x-3">
+      <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
+        <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600 dark:text-gray-300" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white truncate">
+          {ticket.ReporterName || 'N/A'}
+        </p>
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
+          {ticket.ReporterEmail || 'N/A'}
+        </p>
+      </div>
+    </div>
+    <div>
+      <p className="text-sm text-gray-500 dark:text-gray-400">Department</p>
+      <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
+        {ticket.Department || 'N/A'}
+      </p>
+    </div>
+    <div>
+      <p className="text-sm text-gray-500 dark:text-gray-400">Reported On</p>
+      <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
+        {formatDate(ticket.ReportedOn)}
+      </p>
+    </div>
+  </div>
+</div>
           </div>
         </div>
       </div>
