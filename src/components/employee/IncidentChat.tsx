@@ -60,6 +60,17 @@ const IncidentChat: React.FC<IncidentChatProps> = ({ ticketId }) => {
     scrollToBottom();
   }, [messages]);
 
+  // Helper function to get initials from name
+  const getInitials = (name: string): string => {
+    if (!name) return "?";
+    const words = name.trim().split(/\s+/);
+    if (words.length === 1) return words[0][0]?.toUpperCase() || "?";
+    return (
+      (words[0][0]?.toUpperCase() || "") +
+      (words[words.length - 1][0]?.toUpperCase() || "")
+    );
+  };
+
   // Fetch Incident GUID and other critical IDs based on user role
   const fetchIncidentData = async () => {
     if (!user?.id) return;
@@ -458,15 +469,11 @@ const IncidentChat: React.FC<IncidentChatProps> = ({ ticketId }) => {
                     <div
                       className={`w-8 h-8 rounded-full ${getRoleColor(
                         message.senderRole
-                      )} flex items-center justify-center flex-shrink-0 shadow-lg ${
+                      )} flex items-center justify-center flex-shrink-0 shadow-lg text-white text-sm font-semibold ${
                         showAvatar ? "opacity-100" : "opacity-0"
                       }`}
                     >
-                      <img
-                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Mark_Zuckerberg_F8_2019_Keynote_%2832830578717%29_%28cropped%29.jpg/1200px-Mark_Zuckerberg_F8_2019_Keynote_%2832830578717%29_%28cropped%29.jpg"
-                        alt="Mark Zuckerberg"
-                        className="w-full h-full rounded-full object-cover"
-                      />
+                      <span>{getInitials(message.senderName)}</span>
                     </div>
                   )}
                   <div
@@ -521,13 +528,9 @@ const IncidentChat: React.FC<IncidentChatProps> = ({ ticketId }) => {
                     <div
                       className={`w-8 h-8 rounded-full ${getRoleColor(
                         message.senderRole
-                      )} flex items-center justify-center flex-shrink-0 shadow-lg`}
+                      )} flex items-center justify-center flex-shrink-0 shadow-lg text-white text-sm font-semibold`}
                     >
-                      <img
-                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Elon_Musk_Royal_Society_%28crop2%29.jpg/1200px-Elon_Musk_Royal_Society_%28crop2%29.jpg"
-                        alt="Elon Musk"
-                        className="w-full h-full rounded-full object-cover"
-                      />
+                      <span>{getInitials(message.senderName)}</span>
                     </div>
                   )}
                 </div>

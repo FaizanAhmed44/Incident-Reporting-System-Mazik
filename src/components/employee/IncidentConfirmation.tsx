@@ -12,6 +12,7 @@ import {
   Tag,
   PlusCircle,
   FileText,
+  Building,
 } from "lucide-react";
 import {
   confirmIncident,
@@ -85,7 +86,6 @@ const IncidentConfirmation: React.FC = () => {
   const [ccRecipients, setCcRecipients] = useState<Staff[]>([]);
   const [isCcOpen, setIsCcOpen] = useState(false);
   const [ccSearchTerm, setCcSearchTerm] = useState("");
-  // --- ADDED: State for AI Summary visibility ---
   const [isSummaryVisible, setIsSummaryVisible] = useState(false);
 
   useEffect(() => {
@@ -188,7 +188,7 @@ const IncidentConfirmation: React.FC = () => {
           Title: editableData.title!,
           Description: editableData.description!,
           Status: "New",
-          DepartmentType: editableData.department!, // Use editable department
+          DepartmentType: selectedStaffDetails.cr6dd_departmentname, // Use department from selected staff
           AssignedResolverGUID: selectedStaffDetails.cr6dd_staff1id,
           ReportedByGUID: editableData.reportedById!,
           ResolverEmail: selectedStaffDetails.cr6dd_UserID.cr6dd_email,
@@ -209,6 +209,7 @@ const IncidentConfirmation: React.FC = () => {
           processedData: {
             ...editableData,
             staffName: selectedStaffDetails.cr6dd_UserID.cr6dd_name,
+            department: selectedStaffDetails.cr6dd_departmentname,
           },
           attachmentUrl: attachmentUrl,
         },
@@ -265,7 +266,6 @@ const IncidentConfirmation: React.FC = () => {
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              {/* --- RESTORED: AI Summary section with toggle button --- */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-900/80 rounded-lg text-blue-600 dark:text-blue-300">
@@ -325,26 +325,13 @@ const IncidentConfirmation: React.FC = () => {
                     <option value="High">High</option>
                   </select>
                 </div>
+                {/* --- CORRECTED: Assigned Team is now a dynamic read-only field --- */}
                 <div>
-                  <label
-                    htmlFor="department"
-                    className="text-gray-500 dark:text-gray-400 font-medium"
-                  >
-                    Assigned Team
-                  </label>
-                  <select
-                    id="department"
-                    value={editableData.department || ""}
-                    onChange={(e) =>
-                      handleInputChange("department", e.target.value)
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm bg-gray-100 dark:bg-gray-700/50 px-2 py-1 text-sm text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <option>IT Support</option>
-                    <option>HR Request</option>
-                    <option>Facilities</option>
-                    <option>Finance</option>
-                  </select>
+                  <dt className="text-gray-500 dark:text-gray-400">Assigned Team</dt>
+                  <dd className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mt-1">
+                    <Building className="w-3.5 h-3.5" />
+                    {selectedStaffDetails?.cr6dd_departmentname || "N/A"}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">
@@ -368,7 +355,6 @@ const IncidentConfirmation: React.FC = () => {
                   onChange={(e) => handleInputChange("staffId", e.target.value)}
                   className="flex-1 bg-gray-100 dark:bg-gray-700/50 px-3 py-2 rounded-md text-sm text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
-                  {/* --- ENHANCED: Display name and email in 'To' field --- */}
                   {staffList.map((staff) => (
                     <option
                       key={staff.cr6dd_staff1id}
@@ -415,7 +401,6 @@ const IncidentConfirmation: React.FC = () => {
                       </div>
                     ))}
                     <div className="relative">
-                      {/* --- FIXED: CC Add button color --- */}
                       <button
                         onClick={() => setIsCcOpen(!isCcOpen)}
                         className="flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
@@ -429,7 +414,7 @@ const IncidentConfirmation: React.FC = () => {
                             placeholder="Search staff..."
                             value={ccSearchTerm}
                             onChange={(e) => setCcSearchTerm(e.target.value)}
-                            className="w-full text-left px-3 py-2 text-gray-900 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="w-full text-left px-3 py-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none border-b border-gray-200 dark:border-gray-600"
                           />
                           <ul className="max-h-48 overflow-y-auto">
                             {filteredStaffList.length > 0 ? (
@@ -441,13 +426,11 @@ const IncidentConfirmation: React.FC = () => {
                                       setIsCcOpen(false);
                                       setCcSearchTerm("");
                                     }}
-                                    // ADDED text colors for the button itself
                                     className="w-full text-left px-3 py-2 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
                                     <p className="font-semibold">
                                       {staff.cr6dd_UserID.cr6dd_name}
                                     </p>
-                                    {/* CORRECTED the email color for dark mode */}
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
                                       {staff.cr6dd_UserID.cr6dd_email}
                                     </p>
@@ -455,7 +438,6 @@ const IncidentConfirmation: React.FC = () => {
                                 </li>
                               ))
                             ) : (
-                              // CORRECTED the "No staff" color for dark mode
                               <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                                 No staff found.
                               </li>
