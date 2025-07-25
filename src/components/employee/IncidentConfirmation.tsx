@@ -1,10 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Edit3, RefreshCw, CheckCircle, User, Mail, Building, FileText, Zap, ArrowLeft, Save, X, AlertTriangle, Image } from 'lucide-react';
-import { confirmIncident, IncidentConfirmationPayloads, regenerateIncident } from '../../api/incidentApi';
-import { useAuth } from '../../contexts/AuthContext';
-import axios from 'axios';
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  RefreshCw,
+  CheckCircle,
+  User,
+  Zap,
+  ArrowLeft,
+  X,
+  AlertTriangle,
+  Loader2,
+  Tag,
+  PlusCircle,
+  FileText,
+} from "lucide-react";
+import {
+  confirmIncident,
+  IncidentConfirmationPayloads,
+  regenerateIncident,
+} from "../../api/incidentApi";
+import { useAuth } from "../../contexts/AuthContext";
+import axios from "axios";
+import { getStaffList, Staff } from "../../api/active_staff";
 
+// --- INTERFACES ---
 interface LocationState {
   formData: {
     description: string;
@@ -26,7 +44,6 @@ interface LocationState {
         assigned_staff_name: string;
         assigned_staff_id: string;
         assigned_department: string;
-        staff_skillset: string;
       };
     };
     attachment: File | null;
@@ -44,7 +61,6 @@ interface ProcessedData {
   summary: string;
   priority: string;
   staffEmail: string;
-  staffSkillset: string;
   reportedByEmail: string;
   reportedByName: string;
   reportedById: string;
@@ -55,26 +71,43 @@ const IncidentConfirmation: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const state = location.state as LocationState;
-  const [file, setFile] = useState<File | null>(state?.formData?.attachment || null);
-  const [url, setUrl] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
+
+  const [file] = useState<File | null>(state?.formData?.attachment || null);
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [processedData, setProcessedData] = useState<ProcessedData | null>(
+    null
+  );
   const [editableData, setEditableData] = useState<Partial<ProcessedData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [ccRecipients, setCcRecipients] = useState<Staff[]>([]);
+  const [isCcOpen, setIsCcOpen] = useState(false);
+  const [ccSearchTerm, setCcSearchTerm] = useState("");
+  // --- ADDED: State for AI Summary visibility ---
+  const [isSummaryVisible, setIsSummaryVisible] = useState(false);
 
   useEffect(() => {
     if (state?.formData?.apiResponse) {
       processIncidentData();
+    } else {
+      navigate("/employee/submit");
     }
-  }, [state]);
+
+    const fetchStaff = async () => {
+      try {
+        const staff = await getStaffList();
+        setStaffList(staff);
+      } catch (err) {
+        setSubmissionError("Could not load staff list for assignment.");
+      }
+    };
+    fetchStaff();
+  }, [state, navigate]);
 
   const processIncidentData = () => {
-    setIsProcessing(true);
     const { apiResponse, description, reportedBy } = state.formData;
-
     const data: ProcessedData = {
       staffId: apiResponse.staff_assignment.assigned_staff_id,
       staffName: apiResponse.staff_assignment.assigned_staff_name,
@@ -86,106 +119,46 @@ const IncidentConfirmation: React.FC = () => {
       summary: apiResponse.classification.summary,
       priority: apiResponse.classification.severity,
       staffEmail: apiResponse.staff_assignment.assigned_staff_email,
-      staffSkillset: apiResponse.staff_assignment.staff_skillset,
       reportedByEmail: reportedBy.email,
       reportedByName: reportedBy.name,
       reportedById: reportedBy.id,
     };
-
     setProcessedData(data);
     setEditableData(data);
     setIsProcessing(false);
   };
 
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
+  const selectedStaffDetails = useMemo(() => {
+    return staffList.find((s) => s.cr6dd_staff1id === editableData.staffId);
+  }, [editableData.staffId, staffList]);
 
-  const handleSaveEdit = () => {
-    if (processedData) {
-      setProcessedData({ ...processedData, ...editableData });
-    }
-    setIsEditing(false);
-  };
-
-  const handleCancelEdit = () => {
-    if (processedData) {
-      setEditableData(processedData);
-    }
-    setIsEditing(false);
-    setFile(state?.formData?.attachment || null);
-  };
-
-  const handleRegenerate = async () => {
-    if (!processedData) return;
-
-    setIsProcessing(true);
-    setSubmissionError(null);
-
-    try {
-      const payload = {
-        summary: processedData.summary,
-        email: processedData.email,
-      };
-      const response = await regenerateIncident(payload);
-      setProcessedData((prev) => prev ? {
-        ...prev,
-        summary: response.summary,
-        email: response.email,
-      } : prev);
-      setEditableData((prev) => ({
-        ...prev,
-        summary: response.summary,
-        email: response.email,
-      }));
-    } catch (err: any) {
-      setSubmissionError(err.message || 'Failed to regenerate summary and email.');
-      console.error('Regenerate error:', err);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newFile = e.target.files?.[0] || null;
-    if (newFile) {
-      if (!newFile.type.startsWith("image/")) {
-        setSubmissionError("Please select a valid image file.");
-        return;
-      }
-      if (newFile.size > 5 * 1024 * 1024) {
-        setSubmissionError("File size exceeds 5MB limit.");
-        return;
-      }
-      setFile(newFile);
-      setSubmissionError(null);
-    } else {
-      setFile(null);
-    }
-  };
-
-  const handleRemoveAttachment = () => {
-    setFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-    setSubmissionError(null);
-  };
-
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
-    const handleInputChange = (field: keyof ProcessedData, value: string) => {
+  const handleInputChange = (field: keyof ProcessedData, value: string) => {
     setEditableData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleRegenerate = async () => {
+    if (!editableData.summary || !editableData.email) return;
+    setIsRegenerating(true);
+    setSubmissionError(null);
+    try {
+      const payload = {
+        summary: editableData.summary,
+        email: editableData.email,
+      };
+      const response = await regenerateIncident(payload);
+      setEditableData((prev) => ({ ...prev, email: response.email }));
+    } catch (err: any) {
+      setSubmissionError(err.message || "Failed to regenerate email.");
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   const handleUpload = async () => {
     if (!file) return null;
     const data = new FormData();
     data.append("file", file);
     data.append("upload_preset", "unsigned_preset");
-
     try {
       const res = await axios.post(
         "https://api.cloudinary.com/v1_1/dimlhmtd6/image/upload",
@@ -193,473 +166,390 @@ const IncidentConfirmation: React.FC = () => {
       );
       return res.data.secure_url;
     } catch (err) {
-      console.error('Cloudinary upload error:', err);
-      throw new Error('Failed to upload image to Cloudinary.');
+      console.error("Cloudinary upload error:", err);
+      throw new Error("Failed to upload image.");
     }
   };
 
   const handleConfirm = async () => {
-    if (!processedData || !user) return;
-
+    if (!editableData || !user || !selectedStaffDetails) {
+      setSubmissionError(
+        "Cannot submit. Critical information is missing or invalid."
+      );
+      return;
+    }
     setIsSubmitting(true);
     setSubmissionError(null);
-
     try {
-      let attachmentUrl: string | null = null;
-      if (file) {
-        attachmentUrl = await handleUpload();
-        if (!attachmentUrl) {
-          throw new Error('Failed to upload image to Cloudinary.');
-        }
-        setUrl(attachmentUrl);
-        console.log(attachmentUrl);
-      }
+      const attachmentUrl = await handleUpload();
 
       const payload: IncidentConfirmationPayloads = {
         incident: {
-          Title: processedData.title,
-          Description: processedData.description,
+          Title: editableData.title!,
+          Description: editableData.description!,
           Status: "New",
-          DepartmentType: processedData.department,
-          AssignedResolverGUID: processedData.staffId,
-          ReportedByGUID: processedData.reportedById,
-          ResolverEmail: processedData.staffEmail,
-          ReporterEmail: processedData.reportedByEmail,
-          ReporterName: processedData.reportedByName,
-          ResolverName: processedData.staffName,
-          Severity: processedData.priority,
-          descriptionSummary: processedData.summary,
-          emailDraft: processedData.email,
-          imageUrl:attachmentUrl,          
+          DepartmentType: editableData.department!, // Use editable department
+          AssignedResolverGUID: selectedStaffDetails.cr6dd_staff1id,
+          ReportedByGUID: editableData.reportedById!,
+          ResolverEmail: selectedStaffDetails.cr6dd_UserID.cr6dd_email,
+          ReporterEmail: editableData.reportedByEmail!,
+          ReporterName: editableData.reportedByName!,
+          ResolverName: selectedStaffDetails.cr6dd_UserID.cr6dd_name,
+          Severity: editableData.priority!,
+          descriptionSummary: editableData.summary!,
+          emailDraft: editableData.email!,
+          imageUrl: attachmentUrl,
         },
       };
 
       const response = await confirmIncident(payload);
-      const ticketId = response.incidentId;
-      navigate(`/employee/confirmation/${ticketId}`, {
+      navigate(`/employee/confirmation/${response.incidentId}`, {
         state: {
-          formData: {
-            description: processedData.description,
-            reportedBy: {
-              email: processedData.reportedByEmail,
-              name: processedData.reportedByName,
-              id: processedData.reportedById,
-            },         
+          ticketId: response.incidentId,
+          processedData: {
+            ...editableData,
+            staffName: selectedStaffDetails.cr6dd_UserID.cr6dd_name,
           },
-          ticketId,
-          processedData,
           attachmentUrl: attachmentUrl,
         },
       });
     } catch (err: any) {
-      setSubmissionError(err.message || 'Failed to submit incident. Please try again.');
-      console.error('Confirm incident error:', err);
+      setSubmissionError(
+        err.message || "Failed to submit incident. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isProcessing) {
-    return (
-      <div className="flex-1 overflow-auto">
-        <div className="min-h-full bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <div className="flex justify-center mb-6">
-              <div className="relative">
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 sm:p-6 rounded-2xl shadow-2xl">
-                  <Zap className="h-8 w-8 sm:h-12 sm:w-12 text-white animate-pulse" />
-                </div>
-                <div className="absolute -top-1 -right-1 bg-gradient-to-r from-green-400 to-green-500 p-1.5 rounded-full shadow-lg animate-spin">
-                  <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-                </div>
-              </div>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Processing Your Incident
-            </h2>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mb-6">
-              AI is analyzing your request and generating details...
-            </p>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
-              <div
-                className="bg-gradient-to-r from-blue-600 to-blue-700 h-2 rounded-full animate-pulse"
-                style={{ width: '70%' }}
-              ></div>
-            </div>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-              This may take a few moments...
-            </p>
-          </div>
-        </div>
-      </div>
+  const filteredStaffList = useMemo(() => {
+    return staffList.filter(
+      (staff) =>
+        staff.cr6dd_UserID.cr6dd_name
+          .toLowerCase()
+          .includes(ccSearchTerm.toLowerCase()) &&
+        !ccRecipients.some((r) => r.cr6dd_staff1id === staff.cr6dd_staff1id) &&
+        staff.cr6dd_staff1id !== editableData.staffId
     );
-  }
+  }, [ccSearchTerm, staffList, ccRecipients, editableData.staffId]);
 
-  if (!processedData) {
+  if (isProcessing || !processedData) {
     return (
-      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 dark:text-gray-300">
-            No incident data available
-          </p>
-          <button
-            onClick={() => navigate('/employee/submit')}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Go Back
-          </button>
-        </div>
+      <div className="flex h-full items-center justify-center bg-slate-50 dark:bg-gray-900">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-auto">
-      <div className="min-h-full bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 p-4 sm:p-6 lg:p-8">
+    <div className="flex-1 bg-slate-50 dark:bg-gray-900 overflow-auto">
+      <div className="p-6 md:p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center space-x-4 mb-6 sm:mb-8">
+          <div className="flex items-center space-x-4 mb-6">
             <button
-              onClick={() => navigate('/employee/submit')}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              onClick={() => navigate("/employee/submit")}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Go back"
             >
-              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+              <ArrowLeft className="h-5 w-5" />
             </button>
             <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
-                Confirm Incident Details
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Review & Confirm Notification
               </h1>
-              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300">
+              <p className="text-gray-600 dark:text-gray-400">
                 Review AI-processed information before submission
               </p>
             </div>
           </div>
-          <div className="space-y-6 sm:space-y-8">
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-700 rounded-2xl p-4 sm:p-6">
-              <div className="flex items-center space-x-3 sm:space-x-4">
-                <div className="bg-gradient-to-r from-green-500 to-green-600 p-2.5 sm:p-3 rounded-xl">
-                  <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              {/* --- RESTORED: AI Summary section with toggle button --- */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-900/80 rounded-lg text-blue-600 dark:text-blue-300">
+                    <Zap className="h-6 w-6" />
+                  </div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                    AI Analysis & Assignment
+                  </h2>
                 </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                    AI Processing Complete
-                  </h3>
-                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-                    Your incident has been analyzed and categorized
+                <button
+                  onClick={() => setIsSummaryVisible(!isSummaryVisible)}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  <FileText className="w-4 h-4" />
+                  {isSummaryVisible ? "Hide" : "View"} AI Summary
+                </button>
+              </div>
+              <div
+                className={`grid transition-all duration-300 ease-in-out ${
+                  isSummaryVisible
+                    ? "grid-rows-[1fr] opacity-100 pt-4"
+                    : "grid-rows-[0fr] opacity-0"
+                }`}
+              >
+                <div className="overflow-hidden bg-gray-100 dark:bg-gray-700/50 p-3 rounded-md">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    {processedData.summary}
                   </p>
                 </div>
               </div>
+
+              <dl className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 text-sm">
+                <div>
+                  <dt className="text-gray-500 dark:text-gray-400">Category</dt>
+                  <dd className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mt-1">
+                    <Tag className="w-3.5 h-3.5" />
+                    {processedData.category}
+                  </dd>
+                </div>
+                <div>
+                  <label
+                    htmlFor="priority"
+                    className="text-gray-500 dark:text-gray-400 font-medium"
+                  >
+                    Priority
+                  </label>
+                  <select
+                    id="priority"
+                    value={editableData.priority || ""}
+                    onChange={(e) =>
+                      handleInputChange("priority", e.target.value)
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm bg-gray-100 dark:bg-gray-700/50 px-2 py-1 text-sm text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="department"
+                    className="text-gray-500 dark:text-gray-400 font-medium"
+                  >
+                    Assigned Team
+                  </label>
+                  <select
+                    id="department"
+                    value={editableData.department || ""}
+                    onChange={(e) =>
+                      handleInputChange("department", e.target.value)
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm bg-gray-100 dark:bg-gray-700/50 px-2 py-1 text-sm text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option>IT Support</option>
+                    <option>HR Request</option>
+                    <option>Facilities</option>
+                    <option>Finance</option>
+                  </select>
+                </div>
+                <div>
+                  <dt className="text-gray-500 dark:text-gray-400">
+                    Assigned Agent
+                  </dt>
+                  <dd className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 mt-1">
+                    <User className="w-3.5 h-3.5" />
+                    {selectedStaffDetails?.cr6dd_UserID.cr6dd_name || "N/A"}
+                  </dd>
+                </div>
+              </dl>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 sm:p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3 sm:space-x-4">
-                    <div className="bg-white/20 p-2.5 sm:p-3 rounded-xl">
-                      <User className="h-5 w-5 sm:h-6 sm:w-6" />
+
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 w-16 text-right">
+                  To:
+                </span>
+                <select
+                  value={editableData.staffId}
+                  onChange={(e) => handleInputChange("staffId", e.target.value)}
+                  className="flex-1 bg-gray-100 dark:bg-gray-700/50 px-3 py-2 rounded-md text-sm text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  {/* --- ENHANCED: Display name and email in 'To' field --- */}
+                  {staffList.map((staff) => (
+                    <option
+                      key={staff.cr6dd_staff1id}
+                      value={staff.cr6dd_staff1id}
+                    >
+                      {staff.cr6dd_UserID.cr6dd_name} (
+                      {staff.cr6dd_UserID.cr6dd_email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 w-16 text-right">
+                  From:
+                </span>
+                <div className="flex-1 bg-gray-100 dark:bg-gray-700/50 px-3 py-2 rounded-md text-sm text-gray-800 dark:text-gray-200">
+                  {user?.name} ({user?.email})
+                </div>
+              </div>
+              <div>
+                <div className="flex items-start gap-4">
+                  <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 w-16 text-right pt-2">
+                    CC:
+                  </span>
+                  <div className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md flex flex-wrap gap-2 items-center min-h-[40px]">
+                    {ccRecipients.map((staff) => (
+                      <div
+                        key={staff.cr6dd_staff1id}
+                        className="flex items-center gap-1.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 text-xs font-medium pl-2 pr-1 py-0.5 rounded-full"
+                      >
+                        <span>{staff.cr6dd_UserID.cr6dd_name}</span>
+                        <button
+                          onClick={() =>
+                            setCcRecipients(
+                              ccRecipients.filter(
+                                (r) => r.cr6dd_staff1id !== staff.cr6dd_staff1id
+                              )
+                            )
+                          }
+                          className="p-0.5 hover:bg-black/10 rounded-full"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="relative">
+                      {/* --- FIXED: CC Add button color --- */}
+                      <button
+                        onClick={() => setIsCcOpen(!isCcOpen)}
+                        className="flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                      >
+                        <PlusCircle className="w-4 h-4" /> Add
+                      </button>
+                      {isCcOpen && (
+                        <div className="absolute top-full mt-2 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-10">
+                          <input
+                            type="text"
+                            placeholder="Search staff..."
+                            value={ccSearchTerm}
+                            onChange={(e) => setCcSearchTerm(e.target.value)}
+                            className="w-full text-left px-3 py-2 text-gray-900 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          />
+                          <ul className="max-h-48 overflow-y-auto">
+                            {filteredStaffList.length > 0 ? (
+                              filteredStaffList.map((staff) => (
+                                <li key={staff.cr6dd_staff1id}>
+                                  <button
+                                    onClick={() => {
+                                      setCcRecipients([...ccRecipients, staff]);
+                                      setIsCcOpen(false);
+                                      setCcSearchTerm("");
+                                    }}
+                                    // ADDED text colors for the button itself
+                                    className="w-full text-left px-3 py-2 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                  >
+                                    <p className="font-semibold">
+                                      {staff.cr6dd_UserID.cr6dd_name}
+                                    </p>
+                                    {/* CORRECTED the email color for dark mode */}
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                      {staff.cr6dd_UserID.cr6dd_email}
+                                    </p>
+                                  </button>
+                                </li>
+                              ))
+                            ) : (
+                              // CORRECTED the "No staff" color for dark mode
+                              <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                                No staff found.
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-bold">
-                        Staff Information
-                      </h2>
-                      <p className="text-blue-100 text-sm sm:text-base">
-                        Assigned staff and reporter details
+                  </div>
+                </div>
+              </div>
+              <div className="pt-2">
+                <input
+                  type="text"
+                  value={editableData.title || ""}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  className="w-full text-lg font-bold bg-transparent text-gray-900 dark:text-white focus:outline-none py-1 border-b border-gray-200 dark:border-gray-700 focus:border-blue-500"
+                  placeholder="Email Subject"
+                />
+              </div>
+              <div className="pt-2">
+                <textarea
+                  value={editableData.email || ""}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  className="w-full h-64 p-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500 sm:text-sm resize-none"
+                />
+              </div>
+
+              <div className="pt-2">
+                <label className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2 block">
+                  Attachment
+                </label>
+                {file ? (
+                  <div className="flex items-center gap-4 p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt="Attachment Preview"
+                      className="h-16 w-16 object-cover rounded-md border border-gray-200 dark:border-gray-600"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                        {file.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
                   </div>
-                  {!isEditing && (
-                    <button
-                      onClick={handleEdit}
-                      className="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
-                    >
-                      <Edit3 className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span>Edit</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="p-4 sm:p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                        Title
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          value={editableData.title || ''}
-                          onChange={(e) => handleInputChange('title', e.target.value)}
-                          className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      ) : (
-                        <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <User className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                          <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                            {processedData.title}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                        Staff Name
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          value={editableData.staffName || ''}
-                          onChange={(e) => handleInputChange('staffName', e.target.value)}
-                          className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      ) : (
-                        <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <User className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                          <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                            {processedData.staffName}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                        Staff Email
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="email"
-                          value={editableData.staffEmail || ''}
-                          onChange={(e) => handleInputChange('staffEmail', e.target.value)}
-                          className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      ) : (
-                        <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <Mail className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                          <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                            {processedData.staffEmail}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                        Reported By
-                      </label>
-                      <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <User className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                        <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                          {processedData.reportedByName} ({processedData.reportedByEmail})
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                        Department
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          value={editableData.department || ''}
-                          onChange={(e) => handleInputChange('department', e.target.value)}
-                          className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      ) : (
-                        <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <Building className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                          <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                            {processedData.department}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                        Category
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          value={editableData.category || ''}
-                          onChange={(e) => handleInputChange('category', e.target.value)}
-                          className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
-                      ) : (
-                        <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <FileText className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                          <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                            {processedData.category}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                        Priority
-                      </label>
-                      {isEditing ? (
-                        <select
-                          value={editableData.priority || ''}
-                          onChange={(e) => handleInputChange('priority', e.target.value)}
-                          className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        >
-                          <option value="High">High</option>
-                          <option value="Medium">Medium</option>
-                          <option value="Low">Low</option>
-                        </select>
-                      ) : (
-                        <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div
-                            className={`w-3 h-3 rounded-full ${
-                              processedData.priority === 'High'
-                                ? 'bg-red-500'
-                                : processedData.priority === 'Medium'
-                                ? 'bg-yellow-500'
-                                : 'bg-green-500'
-                            }`}
-                          ></div>
-                          <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
-                            {processedData.priority}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                    Attachment
-                  </label>
-                  {file ? (
-                    <div className="relative flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt="Incident Attachment"
-                        className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-md"
-                      />
-                      <span className="text-sm sm:text-base text-gray-900 dark:text-white">
-                        {file.name}
-                      </span>
-                      {isEditing && (
-                        <button
-                          type="button"
-                          onClick={handleRemoveAttachment}
-                          className="ml-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                          title="Remove attachment"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  ) : isEditing ? (
-                    <div className="flex items-center space-x-3">
-                      <button
-                        type="button"
-                        onClick={triggerFileInput}
-                        className="flex items-center space-x-2 px-3 py-2 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/70 transition-colors"
-                      >
-                        <Image className="h-4 w-4" />
-                        <span>Upload Image</span>
-                      </button>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                        ref={fileInputRef}
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-                      No attachment provided
-                    </div>
-                  )}
-                </div>
-                {isEditing && (
-                  <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
-                    <button
-                      onClick={handleCancelEdit}
-                      className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm sm:text-base"
-                    >
-                      <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span>Cancel</span>
-                    </button>
-                    <button
-                      onClick={handleSaveEdit}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
-                    >
-                      <Save className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span>Save Changes</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-4 sm:p-6">
-              <div className="flex items-center space-x-3 sm:space-x-4 mb-4">
-                <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-2.5 sm:p-3 rounded-xl">
-                  <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                    AI-Generated Email
-                  </h3>
-                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-                    Intelligent analysis of your incident
-                  </p>
-                </div>
-              </div>
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-700 rounded-xl p-4">
-                {isEditing ? (
-                  <textarea
-                    value={editableData.email || ''}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    rows={4}
-                  />
                 ) : (
-                  <p className="text-sm sm:text-base text-gray-900 dark:text-white leading-relaxed">
-                    {processedData.email}
+                  <p className="text-sm text-gray-500 dark:text-gray-400 px-3 py-2">
+                    No attachment was provided.
                   </p>
                 )}
               </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  onClick={handleRegenerate}
+                  disabled={isRegenerating || isSubmitting}
+                  className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 ${
+                      isRegenerating ? "animate-spin" : ""
+                    }`}
+                  />
+                  Regenerate with AI
+                </button>
+              </div>
+              {submissionError && (
+                <p className="text-sm text-red-600 dark:text-red-400 text-center flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-md">
+                  <AlertTriangle className="w-4 h-4" />
+                  {submissionError}
+                </p>
+              )}
             </div>
 
-            {submissionError && (
-              <div
-                className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg flex items-center"
-                role="alert"
-              >
-                <AlertTriangle className="h-5 w-5 mr-3" />
-                <div>
-                  <p className="font-bold">Submission Failed</p>
-                  <p>{submissionError}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <button
-                onClick={handleRegenerate}
-                disabled={isProcessing || isSubmitting}
-                className="flex-1 flex items-center justify-center space-x-2 sm:space-x-3 px-6 sm:px-8 py-3 sm:py-4 border-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-sm sm:text-base"
-              >
-                <RefreshCw
-                  className={`h-4 w-4 sm:h-5 sm:w-5 ${isProcessing ? 'animate-spin' : ''}`}
-                />
-                <span>Regenerate</span>
-              </button>
-
+            <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex justify-end">
               <button
                 onClick={handleConfirm}
-                disabled={isSubmitting}
-                className="flex-1 flex items-center justify-center space-x-2 sm:space-x-3 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 font-semibold shadow-lg text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmitting || isRegenerating}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 text-base font-semibold text-white bg-green-600 rounded-lg shadow-md hover:bg-green-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 disabled:bg-gray-400 disabled:transform-none disabled:shadow-none"
               >
                 {isSubmitting ? (
-                  <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Creating Ticket...</span>
+                  </>
                 ) : (
-                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <>
+                    <CheckCircle className="h-5 w-5" />
+                    <span>Send & Create Ticket</span>
+                  </>
                 )}
-                <span>{isSubmitting ? 'Submitting...' : 'Confirm & Submit'}</span>
               </button>
             </div>
           </div>
