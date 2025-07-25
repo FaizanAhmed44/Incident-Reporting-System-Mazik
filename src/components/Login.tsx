@@ -50,7 +50,7 @@
           <div className="relative z-10">
             <div className="flex items-center space-x-3 mb-6 xl:mb-8">              
               <div>
-                <h1 className="text-xl xl:text-2xl font-bold text-white">Incident Portal</h1>
+                <h1 className="text-xl xl:text-2xl font-bold text-white">AI-POWERED INCIDENT TRIAGE & RESOLUTION SYSTEM</h1>
                 <p className="text-sm xl:text-base text-blue-100">Enterprise Solution</p>
               </div>
             </div>
