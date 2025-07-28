@@ -5,7 +5,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { fetchIncidents } from '../../api/supportApi';
 import { CustomLoader } from '../ui/CustomLoader';
 
-
 interface Incident {
   IncidentID: string;
   ReporterName: string;
@@ -28,6 +27,13 @@ const SupportTickets: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
 
+  // Function to get date value for sorting
+  const getDateValue = (dateStr: string | undefined) => {
+    if (!dateStr) return Number.NEGATIVE_INFINITY;
+    const date = new Date(dateStr);
+    return isNaN(date.getTime()) ? Number.NEGATIVE_INFINITY : date.getTime();
+  };
+
   // Function to fetch incidents
   const loadIncidents = async () => {
     console.log('Loading incidents for tickets page...');
@@ -42,10 +48,18 @@ const SupportTickets: React.FC = () => {
     setError(null);
     
     try {
-      const response = await fetchIncidents({ userId:  user.id });
+      const response = await fetchIncidents({ userId: user.id });
       console.log('Tickets API response:', response);
       
-      const incidentsArray = Array.isArray(response) ? response : [response];
+      // Validate response
+      const incidentsArray = Array.isArray(response) 
+        ? response 
+        : response && typeof response === 'object' 
+          ? [response] 
+          : [];
+      
+      // Sort incidents by ReportedOn (newest to oldest)
+      incidentsArray.sort((a, b) => getDateValue(b.ReportedOn) - getDateValue(a.ReportedOn));
       setIncidents(incidentsArray);
     } catch (err) {
       console.error('Error loading incidents:', err);
@@ -119,7 +133,8 @@ const SupportTickets: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'Unknown date';
     try {
       const date = new Date(dateString);
       return date.toLocaleString();
@@ -136,9 +151,12 @@ const SupportTickets: React.FC = () => {
       incident.ReporterName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       incident.ReporterEmail?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesPriority = priorityFilter === 'all' || incident.Severity?.toLowerCase() === priorityFilter;
-    const matchesStatus = statusFilter === 'all' || incident.Status?.toLowerCase() === statusFilter.toLowerCase();
-    const matchesDepartment = departmentFilter === 'all' || incident.Department === departmentFilter;
+    const matchesPriority = priorityFilter === 'all' || 
+      (incident.Severity && incident.Severity.toLowerCase() === priorityFilter.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || 
+      (incident.Status && incident.Status.toLowerCase() === statusFilter.toLowerCase());
+    const matchesDepartment = departmentFilter === 'all' || 
+      (incident.Department && incident.Department === departmentFilter);
     
     return matchesSearch && matchesPriority && matchesStatus && matchesDepartment;
   });
@@ -184,7 +202,7 @@ const SupportTickets: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                Assigned Tickets ({incidents.length})
+                Assigned Tickets ({filteredIncidents.length})
               </h1>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-2">
                 Review and manage incident tickets assigned to your team
@@ -302,7 +320,7 @@ const SupportTickets: React.FC = () => {
                 </Link>
               </div>
 
-              {/* AI Analysis - Enhanced with real data */}
+              {/* AI Analysis */}
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 sm:p-4 mb-4">
                 <div className="flex items-start space-x-3">
                   <div className="bg-blue-100 dark:bg-blue-900/50 p-1 rounded">
@@ -335,10 +353,10 @@ const SupportTickets: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm text-gray-500 dark:text-gray-400 space-y-2 sm:space-y-0">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0">
                   <span>
-                    Reported by: <span className="font-medium">{incident.ReporterName}</span>
+                    Reported by: <span className="font-medium">{incident.ReporterName || 'Unknown'}</span>
                   </span>
                   <span>
-                    Email: <span className="font-medium">{incident.ReporterEmail}</span>
+                    Email: <span className="font-medium">{incident.ReporterEmail || 'N/A'}</span>
                   </span>
                   {incident.Department && (
                     <span>
